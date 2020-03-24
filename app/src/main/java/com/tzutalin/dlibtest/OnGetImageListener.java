@@ -23,7 +23,6 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.media.Image;
 import android.media.Image.Plane;
@@ -34,6 +33,9 @@ import android.os.Trace;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import junit.framework.Assert;
 
@@ -61,7 +63,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private Handler mInferenceHandler;
 
     private Context mContext;
-    private TrasparentTitleView mTransparentTitleView;
+    private TextView mTransparentTitleView;
 
     private int mframeNum = 0;
     private float r = 4f;
@@ -74,21 +76,19 @@ public class OnGetImageListener implements OnImageAvailableListener {
     public void initialize(
             final Context context,
             final AssetManager assetManager,
-            final TrasparentTitleView scoreView,
-            final Handler handler) {
+            final Handler handler, CameraConnectionFragment.OnBitMapListener frameLayout) {
         this.mContext = context;
-        this.mTransparentTitleView = scoreView;
         this.mInferenceHandler = handler;
 
         frameQueue = new LinkedBlockingQueue<>();
         frameQueueForDisplay = new LinkedBlockingQueue<>();
-        processFrameQueue = new ProcessWithQueue(frameQueue, frameQueueForDisplay, mContext, mTransparentTitleView, handler);
+        processFrameQueue = new ProcessWithQueue(frameQueue, frameQueueForDisplay, mContext, handler,frameLayout);
 
     }
 
     public void deInitialize() {
         synchronized (OnGetImageListener.this) {
-            if (processFrameQueue != null){
+            if (processFrameQueue != null) {
                 processFrameQueue.release();
             }
         }
@@ -135,7 +135,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         canvas.drawBitmap(src, matrix, null);
     }
 
-    public Bitmap imageSideInversion(Bitmap src){
+    public Bitmap imageSideInversion(Bitmap src) {
         Matrix sideInversion = new Matrix();
         sideInversion.setScale(-1, 1);
         Bitmap inversedImage = Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), sideInversion, false);
@@ -207,7 +207,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         drawResizedBitmap(mRGBframeBitmap, mCroppedBitmap);
 
         mInversedBipmap = imageSideInversion(mCroppedBitmap);
-        mResizedBitmap = Bitmap.createScaledBitmap(mInversedBipmap, (int)(INPUT_SIZE/r), (int)(INPUT_SIZE/r), true);
+        mResizedBitmap = Bitmap.createScaledBitmap(mInversedBipmap, (int) (INPUT_SIZE / r), (int) (INPUT_SIZE / r), true);
 
         try {
             frameQueueForDisplay.put(mInversedBipmap);

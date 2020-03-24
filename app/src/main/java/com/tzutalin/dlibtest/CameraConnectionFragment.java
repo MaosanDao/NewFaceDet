@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.RectF;
@@ -42,9 +43,9 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.util.Range;
@@ -56,10 +57,11 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.FileWriter;
+import com.tzutalin.dlib.AutoFitTextureView;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -81,13 +83,13 @@ public class CameraConnectionFragment extends Fragment {
     private static final String TAG = "CameraConnectionFragment";
     private static Range<Integer>[] fpsRanges;
 
-    private TrasparentTitleView mScoreView;
-
     /**
      * Conversion from screen rotation to JPEG orientation.
      */
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final String FRAGMENT_DIALOG = "dialog";
+
+    private MyHanlder mMyHandler;
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 0);
@@ -105,7 +107,7 @@ public class CameraConnectionFragment extends Fragment {
                 @Override
                 public void onSurfaceTextureAvailable(
                         final SurfaceTexture texture, final int width, final int height) {
-                        openCamera(width, height);
+                    openCamera(width, height);
                 }
 
                 @Override
@@ -133,6 +135,7 @@ public class CameraConnectionFragment extends Fragment {
      * An {@link AutoFitTextureView} for camera preview.
      */
     private AutoFitTextureView textureView;
+    private ImageView frameLayout;
 
     /**
      * A {@link CameraCaptureSession } for camera preview.
@@ -298,12 +301,14 @@ public class CameraConnectionFragment extends Fragment {
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        mScoreView = (TrasparentTitleView) view.findViewById(R.id.results);
+        frameLayout = (ImageView) view.findViewById(R.id.frameLayout);
     }
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        mMyHandler = new MyHanlder();
     }
 
     @Override
@@ -421,7 +426,7 @@ public class CameraConnectionFragment extends Fragment {
     @SuppressLint("LongLogTag")
     @DebugLog
     private void openCamera(final int width, final int height) {
-        Log.d(TAG, "width "+width+"height "+height);
+        Log.d(TAG, "width " + width + "height " + height);
         setUpCameraOutputs(width, height);
         configureTransform(width, height);
         final Activity activity = getActivity();
@@ -600,7 +605,56 @@ public class CameraConnectionFragment extends Fragment {
             Timber.tag(TAG).e("Exception!", e);
         }
 
-        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), mScoreView, inferenceHandler);
+        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler, new OnBitMapListener() {
+
+            @Override
+            public void onBitMap(Bitmap bitmap) {
+                Message message = Message.obtain();
+                message.what = 1;
+                message.obj = bitmap;
+                mMyHandler.sendMessage(message);
+            }
+
+            @Override
+            public void action(int motion) {
+                Message message = Message.obtain();
+                message.what = 2;
+                message.obj = motion;
+                mMyHandler.sendMessage(message);
+            }
+        });
+    }
+
+    public static final int MOUTH = 1;
+    public static final int EYE = 2;
+    public static final int HEAD = 3;
+
+    public interface OnBitMapListener {
+        void onBitMap(Bitmap bitmap);
+        void action(int motion);
+    }
+
+    private class MyHanlder extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case 1:
+                    Bitmap bitmap = (Bitmap) msg.obj;
+                    frameLayout.setImageBitmap(bitmap);
+                    break;
+                case 2:
+                    int motion = (int) msg.obj;
+                    switch (motion){
+                        case MOUTH:
+                            Toast.makeText(getActivity(), "张嘴了！", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+
+                    break;
+                default:
+            }
+        }
     }
 
     /**

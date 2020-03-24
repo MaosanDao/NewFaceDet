@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tzutalin.dlibtest;
+package com.tzutalin.dlib;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -28,14 +28,14 @@ import java.io.InputStream;
  * Created by Tzutalin on 2016/3/30.
  */
 public class FileUtils {
-    @NonNull
-    public static final void copyFileFromRawToOthers(@NonNull final Context context, @RawRes int id, @NonNull final String targetPath) {
+    public static void copyFileFromRawToOthers(@NonNull final Context context
+            , @RawRes int id, @NonNull final String targetPath) {
         InputStream in = context.getResources().openRawResource(id);
         FileOutputStream out = null;
         try {
             out = new FileOutputStream(targetPath);
             byte[] buff = new byte[1024];
-            int read = 0;
+            int read;
             while ((read = in.read(buff)) > 0) {
                 out.write(buff, 0, read);
             }
@@ -43,9 +43,7 @@ public class FileUtils {
             e.printStackTrace();
         } finally {
             try {
-                if (in != null) {
-                    in.close();
-                }
+                in.close();
                 if (out != null) {
                     out.close();
                 }

@@ -187,15 +187,10 @@ public class FloatingCameraWindow {
     private final class FloatCamView extends FrameLayout {
         private WeakReference<FloatingCameraWindow> mWeakRef;
         private static final int MOVE_THRESHOLD = 10;
-        private int mLastX;
-        private int mLastY;
-        private int mFirstX;
-        private int mFirstY;
         private LayoutInflater mLayoutInflater;
         private ImageView mColorView;
         private TextView mFPSText;
         private TextView mInfoText;
-        private boolean mIsMoving = false;
 
         public FloatCamView(FloatingCameraWindow window) {
             super(window.mContext);
@@ -217,50 +212,13 @@ public class FloatingCameraWindow {
             mFPSText.setVisibility(View.GONE);
             mInfoText.setVisibility(View.GONE);
 
-            int colorMaxWidth = (int) (mWindowWidth* window.mScaleWidthRatio);
+            int colorMaxWidth = (int) (mWindowWidth * window.mScaleWidthRatio);
             int colorMaxHeight = (int) (mWindowHeight * window.mScaleHeightRatio);
 
             mColorView.getLayoutParams().width = colorMaxWidth;
             mColorView.getLayoutParams().height = colorMaxHeight;
         }
 
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    mLastX = (int) event.getRawX();
-                    mLastY = (int) event.getRawY();
-                    mFirstX = mLastX;
-                    mFirstY = mLastY;
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    int deltaX = (int) event.getRawX() - mLastX;
-                    int deltaY = (int) event.getRawY() - mLastY;
-                    mLastX = (int) event.getRawX();
-                    mLastY = (int) event.getRawY();
-                    int totalDeltaX = mLastX - mFirstX;
-                    int totalDeltaY = mLastY - mFirstY;
-
-                    if (mIsMoving
-                            || Math.abs(totalDeltaX) >= MOVE_THRESHOLD
-                            || Math.abs(totalDeltaY) >= MOVE_THRESHOLD) {
-                        mIsMoving = true;
-                        WindowManager windowMgr = mWeakRef.get().mWindowManager;
-                        WindowManager.LayoutParams parm = mWeakRef.get().mWindowParam;
-                        if (event.getPointerCount() == 1 && windowMgr != null) {
-                            parm.x -= deltaX;
-                            parm.y -= deltaY;
-                            windowMgr.updateViewLayout(this, parm);
-                        }
-                    }
-                    break;
-
-                case MotionEvent.ACTION_UP:
-                    mIsMoving = false;
-                    break;
-            }
-            return true;
-        }
 
         public void setRGBImageView(Bitmap rgb) {
             if (rgb != null && !rgb.isRecycled()) {
