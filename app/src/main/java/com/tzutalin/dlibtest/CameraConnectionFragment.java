@@ -61,6 +61,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.tzutalin.dlib.AutoFitTextureView;
+import com.tzutalin.dlib.BitMapListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -605,7 +606,7 @@ public class CameraConnectionFragment extends Fragment {
             Timber.tag(TAG).e("Exception!", e);
         }
 
-        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler, new OnBitMapListener() {
+        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler, new BitMapListener() {
 
             @Override
             public void onBitMap(Bitmap bitmap) {
@@ -629,10 +630,6 @@ public class CameraConnectionFragment extends Fragment {
     public static final int EYE = 2;
     public static final int HEAD = 3;
 
-    public interface OnBitMapListener {
-        void onBitMap(Bitmap bitmap);
-        void action(int motion);
-    }
 
     private class MyHanlder extends Handler {
         @Override

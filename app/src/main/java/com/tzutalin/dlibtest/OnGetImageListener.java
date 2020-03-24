@@ -33,9 +33,10 @@ import android.os.Trace;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.tzutalin.dlib.BitMapListener;
+import com.tzutalin.dlib.ProcessWithQueue;
 
 import junit.framework.Assert;
 
@@ -76,13 +77,13 @@ public class OnGetImageListener implements OnImageAvailableListener {
     public void initialize(
             final Context context,
             final AssetManager assetManager,
-            final Handler handler, CameraConnectionFragment.OnBitMapListener frameLayout) {
+            final Handler handler, BitMapListener frameLayout) {
         this.mContext = context;
         this.mInferenceHandler = handler;
 
         frameQueue = new LinkedBlockingQueue<>();
         frameQueueForDisplay = new LinkedBlockingQueue<>();
-        processFrameQueue = new ProcessWithQueue(frameQueue, frameQueueForDisplay, mContext, handler,frameLayout);
+        processFrameQueue = new ProcessWithQueue(frameQueue, frameQueueForDisplay, mContext, handler, frameLayout);
 
     }
 
