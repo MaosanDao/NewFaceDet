@@ -10,7 +10,6 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Environment;
 import android.os.Handler;
-import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -134,12 +133,6 @@ public class ProcessWithQueue extends Thread {
                     new Runnable() {
                         @Override
                         public void run() {
-
-                            if (!new File(Constants.getFaceShapeModelPath()).exists()) {
-                                Log.v("wangpei", "Copying landmark model to " + Constants.getFaceShapeModelPath());
-                                FileUtils.copyFileFromRawToOthers(mContext, R.raw.shape_predictor_68_face_landmarks, Constants.getFaceShapeModelPath());
-                            }
-
                             mframeNum++;
 //                          saveBitmap(frameData, "frames", String.valueOf(mframeNum) + ".jpg");
 
