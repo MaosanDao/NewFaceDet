@@ -12,14 +12,14 @@ import android.graphics.Bitmap;
 public interface BitMapListener {
 
     /**
-     * 每一帧的数据
+     * data For Each Frame
      *
      * @param bitmap Bitmap
      */
     void onBitMap(Bitmap bitmap);
 
     /**
-     * 产生的动作
+     * Resulting Action
      *
      * @param motion 动作为
      */

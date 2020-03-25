@@ -166,14 +166,11 @@ public class ProcessWithQueue extends Thread {
 
                                             int i = 1;
 
-                                            //从68_face_landmarks获得6个关键点
                                             Point[] leftEye = new Point[6];
                                             Point[] rightEye = new Point[6];
 
                                             for (Point point : landmarks) {
                                                 if (i > 36 && i < 43) {
-                                                    //为了提高处理效率，我们处理的数据被缩小了
-                                                    //因此，必须放大该点才能在原始图像中正确显示。
                                                     int pointX = (int) (point.x * resizeRatio);
                                                     int pointY = (int) (point.y * resizeRatio);
                                                     leftEye[i - 37] = new Point(pointX, pointY);
@@ -203,7 +200,6 @@ public class ProcessWithQueue extends Thread {
                                     }
 
                                     if (ear != 0) {
-                                        //下面的代码很难阅读，但确实有效
                                         x += 1;
                                         ear_array.add(ear);
                                         ax.add(x);
@@ -299,12 +295,10 @@ public class ProcessWithQueue extends Thread {
                                     }
 
                                     long currentTime = System.currentTimeMillis();
-                                    //从无人脸到这里，必须要大于1秒，否则会有抖动值。防抖用的
                                     if (currentTime - isNoFaceTime > 1000) {
                                         if (ratio > 0.6 && ratio < 1) {
                                             headToward = "front";
                                         } else {
-                                            //如果您的右脸比左脸大，那么您的头朝左
                                             headToward = rightHalfFace > leftHalfFace ? "left" : "right";
 
                                             if ("left".equals(headToward)) {
@@ -314,7 +308,6 @@ public class ProcessWithQueue extends Thread {
                                             if ("right".equals(headToward)) {
                                                 isTurnRight = true;
                                             }
-                                            //必须要同时满足左右摇头，才算成功
                                             if (isTurnRight && isTurnLeft) {
                                                 isTurnRight = false;
                                                 isTurnLeft = false;
@@ -345,13 +338,10 @@ public class ProcessWithQueue extends Thread {
 
                                             int i = 1;
 
-                                            //从68_face_landmarks获得6个关键点
                                             Point[] leftEye = new Point[8];
 
                                             for (Point point : landmarks) {
                                                 if (i > 60 && i < 69) {
-                                                    //为了提高处理效率，我们处理的数据被缩小了
-                                                    //因此，必须放大该点才能在原始图像中正确显示。
                                                     int pointX = (int) (point.x * resizeRatio);
                                                     int pointY = (int) (point.y * resizeRatio);
                                                     leftEye[i - 61] = new Point(pointX, pointY);
@@ -370,7 +360,6 @@ public class ProcessWithQueue extends Thread {
 
                                             if (leftEAR != 0) {
 
-                                                //下面的代码很难阅读，但确实有效
                                                 x += 1;
                                                 ear_array.add(leftEAR);
                                                 ax.add(x);
@@ -421,7 +410,6 @@ public class ProcessWithQueue extends Thread {
 
                                             long currentTime = System.currentTimeMillis();
 
-                                            //从无人脸到这里，必须要大于1秒，否则会有抖动值。防抖用的
                                             if (currentTime - isNoFaceTime > 1000) {
                                                 if (leftEAR >= 0.55) {
                                                     if (!isOpenMouth) {
@@ -460,7 +448,6 @@ public class ProcessWithQueue extends Thread {
         }
     }
 
-    //眼睛的高和长的比值
     private double eye_aspect_ratio(Point[] eye) {
         double ear;
         double A = euclidean(eye[1], eye[5]);
@@ -470,7 +457,6 @@ public class ProcessWithQueue extends Thread {
         return ear;
     }
 
-    //眼睛的高和长的比值
     private double mouth_aspect_ratio(Point[] eye) {
         double ear;
         double A = euclidean(eye[1], eye[7]);
@@ -480,21 +466,12 @@ public class ProcessWithQueue extends Thread {
         return ear;
     }
 
-    //两点间的欧式距离
     private double euclidean(Point p1, Point p2) {
         double result;
         result = Math.sqrt(Math.pow((p1.x - p2.x), 2) + Math.pow((p1.y - p2.y), 2));
         return result;
     }
 
-    /**
-     * 过滤异常值,以便更好的计算连续落差Calculate_continuous_drop()
-     *
-     * @param AL     存有ear值的ArrayList
-     * @param ax     ear值对应的帧，AL看作是Y轴的话，那么ax就是X轴，当AL过滤某一ear值时，其对应的帧也应删除
-     * @param THRESH 阈值，小于它才过滤
-     * @return 返回此次调用是否发生了过滤，过滤了返回true,无需过滤返回false
-     */
     private static boolean filter_unexpected_values(ArrayList<Double> AL, ArrayList<Integer> ax, double THRESH) {
         if (AL.size() > 2) {
             if (AL.get(AL.size() - 3) < AL.get(AL.size() - 1)) {
@@ -514,15 +491,13 @@ public class ProcessWithQueue extends Thread {
         return false;
     }
 
-    //返回点的闭合路径，通过canvas可画出
     private Path getPath(Point[] points) {
         Path path = new Path();
         path.moveTo(points[0].x, points[0].y);//起点
-        //添加中间连接点
         for (int i = 1; i < points.length; i++) {
             path.lineTo(points[i].x, points[i].y);
         }
-        path.close(); // 使这些点构成封闭的多边形
+        path.close();
         return path;
     }
 
