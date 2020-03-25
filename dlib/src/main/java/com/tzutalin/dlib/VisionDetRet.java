@@ -1,24 +1,20 @@
 /*
-*  Copyright (C) 2015 TzuTaLin
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ *  Copyright (C) 2015 TzuTaLin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.tzutalin.dlib;
-
-/**
- * Created by Tzutalin on 2015/10/20.
- */
 
 import android.graphics.Point;
 
@@ -100,6 +96,7 @@ public final class VisionDetRet {
 
     /**
      * Add landmark to the list. Usually, call by jni
+     *
      * @param x Point x
      * @param y Point y
      * @return true if adding landmark successfully
@@ -110,6 +107,7 @@ public final class VisionDetRet {
 
     /**
      * Return the list of landmark points
+     *
      * @return ArrayList of android.graphics.Point
      */
     public ArrayList<Point> getFaceLandmarks() {
@@ -118,17 +116,15 @@ public final class VisionDetRet {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Left:");
-        sb.append(mLabel);
-        sb.append(", Top:");
-        sb.append(mTop);
-        sb.append(", Right:");
-        sb.append(mRight);
-        sb.append(", Bottom:");
-        sb.append(mBottom);
-        sb.append(", Label:");
-        sb.append(mLabel);
-        return sb.toString();
+        return "Left:" +
+                mLabel +
+                ", Top:" +
+                mTop +
+                ", Right:" +
+                mRight +
+                ", Bottom:" +
+                mBottom +
+                ", Label:" +
+                mLabel;
     }
 }

@@ -46,6 +46,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.util.Range;
@@ -57,11 +58,14 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.tzutalin.dlib.AutoFitTextureView;
 import com.tzutalin.dlib.BitMapListener;
+import com.tzutalin.dlib.Constants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -195,17 +199,17 @@ public class CameraConnectionFragment extends Fragment {
             };
 
     /**
-     * An additional thread for running tasks that shouldn't block the UI.
+     * 用于运行不应阻塞UI的任务的附加线程。
      */
     private HandlerThread backgroundThread;
 
     /**
-     * A {@link Handler} for running tasks in the background.
+     * 用于在后台运行任务。
      */
     private Handler backgroundHandler;
 
     /**
-     * An additional thread for running inference so as not to block the camera.
+     * 用于运行推理的附加线程，以免阻塞相机。
      */
     private HandlerThread inferenceThread;
 
@@ -251,6 +255,14 @@ public class CameraConnectionFragment extends Fragment {
                     });
         }
     }
+
+    private TextView mHintText;
+    private int mSum = 0;
+
+    private Button mCheckEye;
+    private Button mCheckMouth;
+    private Button mCheckHead;
+    private Button mSetZero;
 
     /**
      * Given {@code choices} of {@code Size}s supported by a camera, chooses the smallest one whose
@@ -303,6 +315,55 @@ public class CameraConnectionFragment extends Fragment {
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
         frameLayout = (ImageView) view.findViewById(R.id.frameLayout);
+        mHintText = (TextView) view.findViewById(R.id.hint_text);
+        mCheckEye = (Button) view.findViewById(R.id.check_eye);
+        mCheckHead = (Button) view.findViewById(R.id.check_head);
+        mCheckMouth = (Button) view.findViewById(R.id.check_mouth);
+        mSetZero = (Button) view.findViewById(R.id.set_zero);
+
+        mHintText.setText("正在初始化中，请不要点击");
+        mCheckEye.setEnabled(false);
+        mCheckHead.setEnabled(false);
+        mCheckMouth.setEnabled(false);
+        mSetZero.setEnabled(false);
+
+        mCheckEye.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showToast("已切换到眨眼");
+                mHintText.setText("已清零，请再次触发动作");
+                mSum = 0;
+                mOnGetPreviewListener.setMotionType(Constants.MOTION_EYE);
+            }
+        });
+
+        mCheckHead.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showToast("已切换到摇头");
+                mHintText.setText("已清零，请再次触发动作");
+                mSum = 0;
+                mOnGetPreviewListener.setMotionType(Constants.MOTION_HEAD);
+            }
+        });
+
+        mCheckMouth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showToast("已切换到张嘴");
+                mHintText.setText("已清零，请再次触发动作");
+                mSum = 0;
+                mOnGetPreviewListener.setMotionType(Constants.MOTION_MOUTH);
+            }
+        });
+
+        mSetZero.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mHintText.setText("已清零，请再次触发动作");
+                mSum = 0;
+            }
+        });
     }
 
     @Override
@@ -348,7 +409,7 @@ public class CameraConnectionFragment extends Fragment {
         final CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             SparseArray<Integer> cameraFaceTypeMap = new SparseArray<>();
-            // Check the facing types of camera devices
+            // 检查相机设备的正面类型
             for (final String cameraId : manager.getCameraIdList()) {
                 final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
                 final Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
@@ -374,9 +435,9 @@ public class CameraConnectionFragment extends Fragment {
             for (final String cameraId : manager.getCameraIdList()) {
                 final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
                 final Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                // If facing back camera or facing external camera exist, we won't use facing front camera
+                // 如果存在面向后置摄像头或面向外置摄像头，则我们不会使用面向前置摄像头
                 if (num_facing_back_camera != null && num_facing_back_camera > 0) {
-                    // We don't use a front facing camera in this sample if there are other camera device facing types
+                    // 如果还有其他面向相机的设备类型，则在此示例中我们不使用前置摄像头
                     if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
                         continue;
                     }
@@ -389,7 +450,7 @@ public class CameraConnectionFragment extends Fragment {
                     continue;
                 }
 
-                // For still image captures, we use the largest available size.
+                // 对于静态图像捕获，我们使用最大的可用尺寸.
                 final Size largest =
                         Collections.max(
                                 Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888)),
@@ -414,8 +475,7 @@ public class CameraConnectionFragment extends Fragment {
         } catch (final CameraAccessException e) {
             Timber.tag(TAG).e("Exception!", e);
         } catch (final NullPointerException e) {
-            // Currently an NPE is thrown when the Camera2API is used but not supported on the
-            // device this code runs.
+            // 当前，使用Camera2API但在运行此代码的设备上不支持时会引发NPE.
             ErrorDialog.newInstance(getString(R.string.camera_error))
                     .show(getChildFragmentManager(), FRAGMENT_DIALOG);
         }
@@ -432,6 +492,10 @@ public class CameraConnectionFragment extends Fragment {
         configureTransform(width, height);
         final Activity activity = getActivity();
         final CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        if (manager == null) {
+            return;
+        }
+
         try {
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
@@ -507,7 +571,7 @@ public class CameraConnectionFragment extends Fragment {
 
             inferenceThread.join();
             inferenceThread = null;
-            inferenceThread = null;
+            inferenceHandler = null;
         } catch (final InterruptedException e) {
             Timber.tag(TAG).e("error", e);
         }
@@ -519,16 +583,16 @@ public class CameraConnectionFragment extends Fragment {
             new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureProgressed(
-                        final CameraCaptureSession session,
-                        final CaptureRequest request,
-                        final CaptureResult partialResult) {
+                        @NonNull final CameraCaptureSession session,
+                        @NonNull final CaptureRequest request,
+                        @NonNull final CaptureResult partialResult) {
                 }
 
                 @Override
                 public void onCaptureCompleted(
-                        final CameraCaptureSession session,
-                        final CaptureRequest request,
-                        final TotalCaptureResult result) {
+                        @NonNull final CameraCaptureSession session,
+                        @NonNull final CaptureRequest request,
+                        @NonNull final TotalCaptureResult result) {
                 }
             };
 
@@ -542,21 +606,21 @@ public class CameraConnectionFragment extends Fragment {
 //            final SurfaceTexture texture = textureView.getSurfaceTexture();
 //            assert texture != null;
 
-            // We configure the size of default buffer to be the size of camera preview we want.
+            // 我们将默认缓冲区的大小配置为所需的摄像机预览的大小
 //            texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
             //texture.setOnFrameAvailableListener();
 
-            // This is the output Surface we need to start preview.
+            // 这是我们需要开始预览的输出Surface.
 //            final Surface surface = new Surface(texture);
 
-            // We set up a CaptureRequest.Builder with the output Surface.
+            // 我们使用输出Surface设置一个CaptureRequest.Builder
             previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             //previewRequestBuilder.addTarget(surface);
 
             // 设置预览画面的帧率 视实际情况而定选择一个帧率范围
 //            previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRanges[0]);
 
-            // Create the reader for the preview frames.
+            // 为预览框架创建阅读器
             previewReader =
                     ImageReader.newInstance(
                             previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
@@ -564,30 +628,30 @@ public class CameraConnectionFragment extends Fragment {
             previewReader.setOnImageAvailableListener(mOnGetPreviewListener, backgroundHandler);
             previewRequestBuilder.addTarget(previewReader.getSurface());
 
-            // Here, we create a CameraCaptureSession for camera preview.
+            // 在这里，我们创建了CameraCaptureSession来进行相机预览
             cameraDevice.createCaptureSession(
                     //Arrays.asList(surface,previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
                     Arrays.asList(previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
 
                         @Override
-                        public void onConfigured(final CameraCaptureSession cameraCaptureSession) {
-                            // The camera is already closed
+                        public void onConfigured(@NonNull final CameraCaptureSession cameraCaptureSession) {
+                            // 相机已经关闭
                             if (null == cameraDevice) {
                                 return;
                             }
 
-                            // When the session is ready, we start displaying the preview.
+                            // 会话准备就绪后，我们开始显示预览.
                             captureSession = cameraCaptureSession;
                             try {
-                                // Auto focus should be continuous for camera preview.
+                                // 自动对焦应连续进行相机预览.
                                 previewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                                // Flash is automatically enabled when necessary.
+                                // 必要时会自动启用闪光灯.
                                 previewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
 
-                                // Finally, we start displaying the camera preview.
+                                // 最后，我们开始显示摄像机预览。
                                 previewRequest = previewRequestBuilder.build();
                                 captureSession.setRepeatingRequest(
                                         previewRequest, captureCallback, backgroundHandler);
@@ -597,7 +661,7 @@ public class CameraConnectionFragment extends Fragment {
                         }
 
                         @Override
-                        public void onConfigureFailed(final CameraCaptureSession cameraCaptureSession) {
+                        public void onConfigureFailed(@NonNull final CameraCaptureSession cameraCaptureSession) {
                             showToast("Failed");
                         }
                     },
@@ -624,12 +688,22 @@ public class CameraConnectionFragment extends Fragment {
                 mMyHandler.sendMessage(message);
             }
         });
+
+        final Activity activity = getActivity();
+        if (activity != null) {
+            activity.runOnUiThread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            mHintText.setText("已初始化完毕，请选择底部的检测类型");
+                            mCheckEye.setEnabled(true);
+                            mCheckHead.setEnabled(true);
+                            mCheckMouth.setEnabled(true);
+                            mSetZero.setEnabled(true);
+                        }
+                    });
+        }
     }
-
-    public static final int MOUTH = 1;
-    public static final int EYE = 2;
-    public static final int HEAD = 3;
-
 
     private class MyHanlder extends Handler {
         @Override
@@ -638,13 +712,21 @@ public class CameraConnectionFragment extends Fragment {
             switch (msg.what) {
                 case 1:
                     Bitmap bitmap = (Bitmap) msg.obj;
+
                     frameLayout.setImageBitmap(bitmap);
                     break;
                 case 2:
+                    mSum++;
                     int motion = (int) msg.obj;
-                    switch (motion){
-                        case MOUTH:
-                            Toast.makeText(getActivity(), "张嘴了！", Toast.LENGTH_SHORT).show();
+                    switch (motion) {
+                        case Constants.MOTION_EYE:
+                            mHintText.setText("眨眼次数：" + mSum);
+                            break;
+                        case Constants.MOTION_MOUTH:
+                            mHintText.setText("张嘴次数：" + mSum);
+                            break;
+                        case Constants.MOTION_HEAD:
+                            mHintText.setText("摇头次数：" + mSum);
                             break;
                     }
 

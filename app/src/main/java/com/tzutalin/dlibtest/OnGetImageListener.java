@@ -18,7 +18,6 @@ package com.tzutalin.dlibtest;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -52,7 +51,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
     private int mScreenRotation = 90;
 
-    private int mPreviewWdith = 0;
+    private int mPreviewWidth = 0;
     private int mPreviewHeight = 0;
     private byte[][] mYUVBytes;
     private int[] mRGBBytes = null;
@@ -74,7 +73,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
     private LinkedBlockingQueue<Bitmap> frameQueueForDisplay;
 
 
-    public void initialize(
+    void initialize(
             final Context context,
             final AssetManager assetManager,
             final Handler handler, BitMapListener frameLayout) {
@@ -87,7 +86,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
     }
 
-    public void deInitialize() {
+    void deInitialize() {
         synchronized (OnGetImageListener.this) {
             if (processFrameQueue != null) {
                 processFrameQueue.release();
@@ -95,20 +94,24 @@ public class OnGetImageListener implements OnImageAvailableListener {
         }
     }
 
-    private void drawResizedBitmap(final Bitmap src, final Bitmap dst) {
+    public void setMotionType(int motion){
+        processFrameQueue.setMotionType(motion);
+    }
 
-        Display getOrient = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-        int orientation = Configuration.ORIENTATION_UNDEFINED;
+    private void drawResizedBitmap(final Bitmap src, final Bitmap dst) {
+        WindowManager windowManager = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE));
+        if (windowManager == null) {
+            return;
+        }
+        Display getOrient = windowManager.getDefaultDisplay();
         Point point = new Point();
         getOrient.getSize(point);
         int screen_width = point.x;
         int screen_height = point.y;
         Log.d(TAG, String.format("screen size (%d,%d)", screen_width, screen_height));
         if (screen_width < screen_height) {
-            orientation = Configuration.ORIENTATION_PORTRAIT;
             mScreenRotation = -90;
         } else {
-            orientation = Configuration.ORIENTATION_LANDSCAPE;
             mScreenRotation = 0;
         }
 
@@ -136,11 +139,10 @@ public class OnGetImageListener implements OnImageAvailableListener {
         canvas.drawBitmap(src, matrix, null);
     }
 
-    public Bitmap imageSideInversion(Bitmap src) {
+    private Bitmap imageSideInversion(Bitmap src) {
         Matrix sideInversion = new Matrix();
         sideInversion.setScale(-1, 1);
-        Bitmap inversedImage = Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), sideInversion, false);
-        return inversedImage;
+        return Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), sideInversion, false);
     }
 
     @Override
@@ -160,13 +162,13 @@ public class OnGetImageListener implements OnImageAvailableListener {
             final Plane[] planes = image.getPlanes();
 
             // Initialize the storage bitmaps once when the resolution is known.
-            if (mPreviewWdith != image.getWidth() || mPreviewHeight != image.getHeight()) {
-                mPreviewWdith = image.getWidth();
+            if (mPreviewWidth != image.getWidth() || mPreviewHeight != image.getHeight()) {
+                mPreviewWidth = image.getWidth();
                 mPreviewHeight = image.getHeight();
 
-                //Log.d(TAG, String.format("Initializing at size %dx%d", mPreviewWdith, mPreviewHeight));
-                mRGBBytes = new int[mPreviewWdith * mPreviewHeight];
-                mRGBframeBitmap = Bitmap.createBitmap(mPreviewWdith, mPreviewHeight, Config.ARGB_8888);
+                //Log.d(TAG, String.format("Initializing at size %dx%d", mPreviewWidth, mPreviewHeight));
+                mRGBBytes = new int[mPreviewWidth * mPreviewHeight];
+                mRGBframeBitmap = Bitmap.createBitmap(mPreviewWidth, mPreviewHeight, Config.ARGB_8888);
                 mCroppedBitmap = Bitmap.createBitmap(INPUT_SIZE, INPUT_SIZE, Config.ARGB_8888);
 
                 mYUVBytes = new byte[planes.length][];
@@ -187,7 +189,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
                     mYUVBytes[1],
                     mYUVBytes[2],
                     mRGBBytes,
-                    mPreviewWdith,
+                    mPreviewWidth,
                     mPreviewHeight,
                     yRowStride,
                     uvRowStride,
@@ -204,7 +206,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
             return;
         }
 
-        mRGBframeBitmap.setPixels(mRGBBytes, 0, mPreviewWdith, 0, 0, mPreviewWdith, mPreviewHeight);
+        mRGBframeBitmap.setPixels(mRGBBytes, 0, mPreviewWidth, 0, 0, mPreviewWidth, mPreviewHeight);
         drawResizedBitmap(mRGBframeBitmap, mCroppedBitmap);
 
         mInversedBipmap = imageSideInversion(mCroppedBitmap);

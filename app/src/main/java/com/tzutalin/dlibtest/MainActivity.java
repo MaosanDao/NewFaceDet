@@ -292,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
 
     @UiThread
     protected void showDiaglog() {
-        mDialog = ProgressDialog.show(MainActivity.this, "Wait", "Face detection", true);
+        mDialog = ProgressDialog.show(MainActivity.this, "稍等", "正在解析人脸数据", true);
     }
 
     @UiThread

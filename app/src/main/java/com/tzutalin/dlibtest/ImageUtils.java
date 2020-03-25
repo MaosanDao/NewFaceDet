@@ -19,6 +19,7 @@ package com.tzutalin.dlibtest;
 import android.graphics.Bitmap;
 import android.os.Environment;
 import android.support.annotation.Keep;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -55,10 +56,11 @@ public class ImageUtils {
         final File myDir = new File(root);
 
         if (!myDir.mkdirs()) {
+            Log.v("ImageUtils","No Dir,Make dirs");
         }
 
-        final String fname = "preview.png";
-        final File file = new File(myDir, fname);
+        final String frame = "preview.png";
+        final File file = new File(myDir, frame);
         if (file.exists()) {
             file.delete();
         }
@@ -68,6 +70,7 @@ public class ImageUtils {
             out.flush();
             out.close();
         } catch (final Exception e) {
+            e.printStackTrace();
         }
     }
 

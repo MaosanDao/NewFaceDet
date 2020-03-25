@@ -17,6 +17,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+
     <com.tzutalin.dlib.AutoFitTextureView
         android:id="@+id/texture"
         android:layout_width="wrap_content"
@@ -26,6 +27,58 @@
     <ImageView
         android:id="@+id/frameLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/hint_text"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@color/divider_white"
+        android:gravity="center"
+        android:text="正在检测中..."
+        android:textColor="@android:color/holo_orange_dark"
+        android:textSize="20sp" />
+
+    <LinearLayout
+        android:id="@+id/bottom_layout"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/divider_white"
+        android:orientation="horizontal"
+        android:textColor="@android:color/holo_orange_dark"
+        android:textSize="30sp"
+        android:weightSum="4">
+
+        <Button
+            android:id="@+id/check_mouth"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="检测张嘴" />
+
+        <Button
+            android:id="@+id/check_eye"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="检测眨眼" />
+
+        <Button
+            android:id="@+id/check_head"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="检测摇头" />
+
+        <Button
+            android:id="@+id/set_zero"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="次数清零" />
+
+
+    </LinearLayout>
 
 </RelativeLayout>

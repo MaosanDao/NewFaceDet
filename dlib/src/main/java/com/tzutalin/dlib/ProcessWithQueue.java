@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Environment;
@@ -27,7 +28,7 @@ public class ProcessWithQueue extends Thread {
     private LinkedBlockingQueue<Bitmap> mQueue;
     private LinkedBlockingQueue<Bitmap> frameForDisplay;
 
-    private static String checkMode = null;
+    private static int checkMode = 0;
 
     private List<VisionDetRet> results;
 
@@ -47,7 +48,6 @@ public class ProcessWithQueue extends Thread {
     private double DROP_THRESH = 0.065;
     private ArrayList<Double> ear_array = new ArrayList<>();
     private ArrayList<Integer> ax = new ArrayList<>();
-    private ArrayList<Double> ay = new ArrayList<>();
     private int continuous_Increment = 0;
     private int continuous_Decrement = 0;
     private double drop = 0;
@@ -93,11 +93,14 @@ public class ProcessWithQueue extends Thread {
         mFaceLandmardkPaint = new Paint();
         mFaceLandmardkPaint.setColor(Color.RED);
         mFaceLandmardkPaint.setStrokeWidth(2);
+        mFaceLandmardkPaint.setAntiAlias(true);
         mFaceLandmardkPaint.setStyle(Paint.Style.STROKE);
 
-        checkMode = EyesBlinkDetection;
-
         start();
+    }
+
+    public void setMotionType(int motion) {
+        checkMode = motion;
     }
 
     public void release() {
@@ -142,11 +145,11 @@ public class ProcessWithQueue extends Thread {
 
                             switch (checkMode) {
 
-                                case NoDetection: {
+                                case Constants.NO_SET: {
                                     mWindow.onBitMap(framefordisplay);
                                 }
                                 break;
-                                case EyesBlinkDetection: {
+                                case Constants.MOTION_EYE: {
                                     results = mFaceDet.detect(frameData);
                                     if (results == null) {
                                         return;
@@ -156,6 +159,8 @@ public class ProcessWithQueue extends Thread {
                                         for (final VisionDetRet ret : results) {
                                             float resizeRatio = 4f;
                                             Canvas canvas = new Canvas(framefordisplay);
+                                            canvas.setDrawFilter(new PaintFlagsDrawFilter(0
+                                                    , Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
 
                                             ArrayList<Point> landmarks = ret.getFaceLandmarks();
 
@@ -195,7 +200,6 @@ public class ProcessWithQueue extends Thread {
                                         }
                                     } else {
                                         frames_notFoundFace++;
-                                        Log.i("frames_notFoundFace", String.valueOf(frames_notFoundFace));
                                     }
 
                                     if (ear != 0) {
@@ -203,7 +207,6 @@ public class ProcessWithQueue extends Thread {
                                         x += 1;
                                         ear_array.add(ear);
                                         ax.add(x);
-                                        ay.add(ear);
                                         ear_array_removed = filter_unexpected_values(ear_array, ax, THRESH);
 
                                         if (ear_array.size() > 2 && !ear_array_removed) {
@@ -243,9 +246,9 @@ public class ProcessWithQueue extends Thread {
                                                 if (Math.abs(closeEyes_drop + openEyes_drop) < 0.1 && ear_array.get(ear_array.size() - 3 - temp) < 0.21
                                                         && openEyes_start - closeEyes_end < 20) {
 
-                                                    Log.e("wangpei", " 眨眼了");
                                                     blink += 1;
                                                     closeEyes_drop = -5;
+                                                    mWindow.action(Constants.MOTION_EYE);
                                                 }
                                             }
                                         }
@@ -256,17 +259,22 @@ public class ProcessWithQueue extends Thread {
                                     mWindow.onBitMap(framefordisplay);
                                 }
                                 break;
-                                case headOrientationDetection: {
+                                case Constants.MOTION_HEAD: {
 
                                     long startTime = System.currentTimeMillis();
 
                                     results = mFaceDet.detect(frameData);
 
+                                    if (results == null) {
+                                        return;
+                                    }
+
                                     if (results.size() != 0) {
                                         for (final VisionDetRet ret : results) {
                                             float resizeRatio = 4f;
                                             Canvas canvas = new Canvas(framefordisplay);
-
+                                            canvas.setDrawFilter(new PaintFlagsDrawFilter(0
+                                                    , Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
                                             ArrayList<Point> landmarks = ret.getFaceLandmarks();
 
 
@@ -288,7 +296,6 @@ public class ProcessWithQueue extends Thread {
                                     } else {
                                         frames_notFoundFace++;
                                         isNoFaceTime = System.currentTimeMillis();
-                                        Log.i("wangpei", "无人脸");
                                     }
 
                                     long currentTime = System.currentTimeMillis();
@@ -300,7 +307,6 @@ public class ProcessWithQueue extends Thread {
                                             //如果您的右脸比左脸大，那么您的头朝左
                                             headToward = rightHalfFace > leftHalfFace ? "left" : "right";
 
-
                                             if ("left".equals(headToward)) {
                                                 isTurnLeft = true;
                                             }
@@ -310,16 +316,14 @@ public class ProcessWithQueue extends Thread {
                                             }
                                             //必须要同时满足左右摇头，才算成功
                                             if (isTurnRight && isTurnLeft) {
-                                                Log.e("wangpei", "摇头了");
-
                                                 isTurnRight = false;
                                                 isTurnLeft = false;
+
+                                                mWindow.action(Constants.MOTION_HEAD);
                                             }
 
                                         }
 
-                                    } else {
-                                        Log.d("wangpei", "抖动的");
                                     }
 //                                    mTransparentTitleView.setText("头朝向:" + headToward + " 耗时: " + (endTime - startTime) / 1000f);
 //                                    mWindow.setImageBitmap("总帧数: " + mframeNum);
@@ -327,12 +331,16 @@ public class ProcessWithQueue extends Thread {
                                     mWindow.onBitMap(framefordisplay);
                                 }
                                 break;
-                                case MouthOrientationDetection: {
+                                case Constants.MOTION_MOUTH: {
                                     results = mFaceDet.detect(frameData);
+                                    if (results == null) {
+                                        return;
+                                    }
                                     if (results.size() != 0) {
                                         for (final VisionDetRet ret : results) {
                                             float resizeRatio = 4f;
                                             Canvas canvas = new Canvas(framefordisplay);
+                                            canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
                                             ArrayList<Point> landmarks = ret.getFaceLandmarks();
 
                                             int i = 1;
@@ -366,7 +374,6 @@ public class ProcessWithQueue extends Thread {
                                                 x += 1;
                                                 ear_array.add(leftEAR);
                                                 ax.add(x);
-                                                ay.add(leftEAR);
                                                 ear_array_removed = filter_unexpected_values(ear_array, ax, THRESH);
 
                                                 if (ear_array.size() > 2 && !ear_array_removed) {
@@ -405,7 +412,6 @@ public class ProcessWithQueue extends Thread {
                                                         openEyes_start = ax.get(ax.size() - 3 - temp);
                                                         if (Math.abs(closeEyes_drop + openEyes_drop) < 0.1 && ear_array.get(ear_array.size() - 3 - temp) < 0.21
                                                                 && openEyes_start - closeEyes_end < 20) {
-                                                            blink += 1;
                                                             closeEyes_drop = -5;
                                                         }
                                                     }
@@ -413,22 +419,18 @@ public class ProcessWithQueue extends Thread {
 
                                             }
 
-
                                             long currentTime = System.currentTimeMillis();
 
                                             //从无人脸到这里，必须要大于1秒，否则会有抖动值。防抖用的
                                             if (currentTime - isNoFaceTime > 1000) {
                                                 if (leftEAR >= 0.55) {
                                                     if (!isOpenMouth) {
-                                                        Log.v("wangpei", "ear:" + leftEAR);
-//                                                        mWindow.action(CameraConnectionFragment.MOUTH);
                                                         isOpenMouth = true;
+                                                        mWindow.action(Constants.MOTION_MOUTH);
                                                     }
                                                 } else {
                                                     isOpenMouth = false;
                                                 }
-                                            } else {
-                                                Log.d("wangpei", "抖动的");
                                             }
 //                                            keyPoint_mouth_top = landmarks.get(63);
 //                                            keyPoint_mouth_bottom = landmarks.get(67);
@@ -440,7 +442,6 @@ public class ProcessWithQueue extends Thread {
                                     } else {
                                         frames_notFoundFace++;
                                         isNoFaceTime = System.currentTimeMillis();
-                                        Log.i("wangpei", "无人脸");
                                     }
 
 
@@ -461,7 +462,7 @@ public class ProcessWithQueue extends Thread {
 
     //眼睛的高和长的比值
     private double eye_aspect_ratio(Point[] eye) {
-        double ear = 0;
+        double ear;
         double A = euclidean(eye[1], eye[5]);
         double B = euclidean(eye[2], eye[4]);
         double C = euclidean(eye[0], eye[3]);
@@ -471,7 +472,7 @@ public class ProcessWithQueue extends Thread {
 
     //眼睛的高和长的比值
     private double mouth_aspect_ratio(Point[] eye) {
-        double ear = 0;
+        double ear;
         double A = euclidean(eye[1], eye[7]);
         double B = euclidean(eye[3], eye[5]);
         double C = euclidean(eye[0], eye[4]);
@@ -481,7 +482,7 @@ public class ProcessWithQueue extends Thread {
 
     //两点间的欧式距离
     private double euclidean(Point p1, Point p2) {
-        double result = 0;
+        double result;
         result = Math.sqrt(Math.pow((p1.x - p2.x), 2) + Math.pow((p1.y - p2.y), 2));
         return result;
     }
@@ -526,7 +527,7 @@ public class ProcessWithQueue extends Thread {
     }
 
     private void saveBitmap(Bitmap bm, String directory, String fileName) {
-        String filePath = null;
+        String filePath;
 
         boolean hasSDCard = Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
 
