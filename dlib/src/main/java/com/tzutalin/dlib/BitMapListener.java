@@ -20,7 +20,7 @@ public interface BitMapListener {
     /**
      * Resulting Action
      *
-     * @param motion ¶¯×÷Îª
+     * @param motion motion
      */
     void action(int motion);
 }
