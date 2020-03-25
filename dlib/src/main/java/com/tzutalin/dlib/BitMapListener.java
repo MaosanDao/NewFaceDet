@@ -3,7 +3,6 @@ package com.tzutalin.dlib;
 import android.graphics.Bitmap;
 
 /**
- * Function: 接口回调
  * Created on 2020/3/24.
  *
  * @author Wangpei

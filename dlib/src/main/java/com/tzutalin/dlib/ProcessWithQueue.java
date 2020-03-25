@@ -318,9 +318,6 @@ public class ProcessWithQueue extends Thread {
                                         }
 
                                     }
-//                                    mTransparentTitleView.setText("头朝向:" + headToward + " 耗时: " + (endTime - startTime) / 1000f);
-//                                    mWindow.setImageBitmap("总帧数: " + mframeNum);
-//                                    mWindow.setMoreInformation("比率: " + ratio);
                                     mWindow.onBitMap(framefordisplay);
                                 }
                                 break;
@@ -345,7 +342,6 @@ public class ProcessWithQueue extends Thread {
                                                     int pointX = (int) (point.x * resizeRatio);
                                                     int pointY = (int) (point.y * resizeRatio);
                                                     leftEye[i - 61] = new Point(pointX, pointY);
-                                                    //canvas.drawCircle(pointX, pointY, 2, mFaceLandmardkPaint);
                                                 }
                                                 if (i > 69) {
                                                     break;
@@ -354,7 +350,6 @@ public class ProcessWithQueue extends Thread {
                                             }
 
                                             canvas.drawPath(getPath(leftEye), mFaceLandmardkPaint);
-                                            //saveBitmap(frameData, "Pframes", String.valueOf(mframeNum) + ".jpg");
 
                                             double leftEAR = mouth_aspect_ratio(leftEye);
 
@@ -420,24 +415,12 @@ public class ProcessWithQueue extends Thread {
                                                     isOpenMouth = false;
                                                 }
                                             }
-//                                            keyPoint_mouth_top = landmarks.get(63);
-//                                            keyPoint_mouth_bottom = landmarks.get(67);
-//
-//                                            canvas.drawCircle(keyPoint_mouth_top.x, keyPoint_mouth_top.y, 2, mFaceLandmardkPaint);
-//                                            canvas.drawCircle(keyPoint_mouth_bottom.x, keyPoint_mouth_bottom.y, 2, mFaceLandmardkPaint);
-
                                         }
                                     } else {
                                         frames_notFoundFace++;
                                         isNoFaceTime = System.currentTimeMillis();
                                     }
-
-
                                     long endTime = System.currentTimeMillis();
-
-//                                    mTransparentTitleView.setText("头朝向:" + headToward + " 耗时: " + (endTime - startTime) / 1000f);
-//                                    mWindow.setImageBitmap("总帧数: " + mframeNum);
-//                                    mWindow.setMoreInformation("比率: " + ratio);
                                     mWindow.onBitMap(framefordisplay);
                                 }
                                 break;
@@ -493,7 +476,7 @@ public class ProcessWithQueue extends Thread {
 
     private Path getPath(Point[] points) {
         Path path = new Path();
-        path.moveTo(points[0].x, points[0].y);//起点
+        path.moveTo(points[0].x, points[0].y);
         for (int i = 1; i < points.length; i++) {
             path.lineTo(points[i].x, points[i].y);
         }
