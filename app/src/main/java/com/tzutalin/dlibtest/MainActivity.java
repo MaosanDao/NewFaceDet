@@ -27,7 +27,6 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.widget.Toast;
 
 import com.dexafree.materialList.card.Card;
@@ -39,7 +38,6 @@ import com.tzutalin.dlib.FileUtils;
 import com.tzutalin.dlib.PedestrianDet;
 import com.tzutalin.dlib.VisionDetRet;
 
-import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.Click;
 import org.androidannotations.annotations.EActivity;
@@ -106,7 +104,18 @@ public class MainActivity extends AppCompatActivity {
 
     @Click({R.id.fab_cam})
     protected void launchCameraPreview() {
-        startActivity(new Intent(this, CameraActivity.class));
+        final String targetPath = Constants.getFaceShapeModelPath();
+        if (!new File(targetPath).exists()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "正在拷贝数据库，请再试！ " + targetPath, Toast.LENGTH_SHORT).show();
+                }
+            });
+            FileUtils.copyFileFromRawToOthers(getApplicationContext(), R.raw.shape_predictor_68_face_landmarks, targetPath);
+        }else{
+            startActivity(new Intent(this, CameraActivity.class));
+        }
     }
 
     /**
@@ -216,17 +225,6 @@ public class MainActivity extends AppCompatActivity {
     @NonNull
     protected void runDetectAsync(@NonNull String imgPath) {
         showDiaglog();
-
-        final String targetPath = Constants.getFaceShapeModelPath();
-        if (!new File(targetPath).exists()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(MainActivity.this, "Copy landmark model to " + targetPath, Toast.LENGTH_SHORT).show();
-                }
-            });
-            FileUtils.copyFileFromRawToOthers(getApplicationContext(), R.raw.shape_predictor_68_face_landmarks, targetPath);
-        }
         // Init
         if (mPersonDet == null) {
             mPersonDet = new PedestrianDet();
