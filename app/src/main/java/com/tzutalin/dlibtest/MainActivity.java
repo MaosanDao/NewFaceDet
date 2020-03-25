@@ -75,8 +75,7 @@ public class MainActivity extends AppCompatActivity {
     protected FloatingActionButton mFabActionBt;
     @ViewById(R.id.fab_cam)
     protected FloatingActionButton mFabCamActionBt;
-    @ViewById(R.id.toolbar)
-    protected Toolbar mToolbar;
+
 
     FaceDet mFaceDet;
     PedestrianDet mPersonDet;
@@ -85,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mListView = (MaterialListView) findViewById(R.id.material_listview);
-        setSupportActionBar(mToolbar);
         // Just use hugo to print log
         isExternalStorageWritable();
         isExternalStorageReadable();
@@ -98,10 +96,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @AfterViews
-    protected void setupUI() {
-        mToolbar.setTitle(getString(R.string.app_name));
-    }
 
     @Click({R.id.fab})
     protected void launchGallery() {
