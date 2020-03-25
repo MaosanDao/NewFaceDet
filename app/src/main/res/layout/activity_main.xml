@@ -50,7 +50,8 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="10dp"
         android:text="从相机选取照片解析"
-        android:textColor="@android:color/holo_orange_dark" />
+        android:textColor="@android:color/holo_orange_dark"
+        android:visibility="gone" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
@@ -58,7 +59,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="30dp"
-        android:src="@drawable/gallery" />
+        android:src="@drawable/gallery"
+        android:visibility="gone" />
 
     <TextView
         android:layout_width="wrap_content"
