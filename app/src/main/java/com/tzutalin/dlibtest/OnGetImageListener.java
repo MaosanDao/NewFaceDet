@@ -37,8 +37,6 @@ import android.widget.TextView;
 import com.tzutalin.dlib.BitMapListener;
 import com.tzutalin.dlib.ProcessWithQueue;
 
-import junit.framework.Assert;
-
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -94,7 +92,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
         }
     }
 
-    public void setMotionType(int motion){
+    void setMotionType(int motion) {
         processFrameQueue.setMotionType(motion);
     }
 
@@ -115,9 +113,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
             mScreenRotation = 0;
         }
 
-        Assert.assertEquals(dst.getWidth(), dst.getHeight());
         final float minDim = Math.min(src.getWidth(), src.getHeight());
-
         final Matrix matrix = new Matrix();
 
         // We only want the center square out of the original rectangle.
