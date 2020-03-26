@@ -399,7 +399,7 @@ public class ProcessWithQueue extends Thread {
                                             long currentTime = System.currentTimeMillis();
 
                                             if (currentTime - isNoFaceTime > 1000) {
-                                                if (leftEAR >= 0.55) {
+                                                if (leftEAR >= 0.50) {
                                                     if (!isOpenMouth) {
                                                         isOpenMouth = true;
                                                         mWindow.action(Constants.MOTION_MOUTH);
