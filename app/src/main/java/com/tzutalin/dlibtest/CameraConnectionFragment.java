@@ -40,13 +40,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.tzutalin.dlib.AutoFitTextureView;
-import com.tzutalin.dlib.BitMapListener;
 import com.tzutalin.dlib.Constants;
+import com.tzutalin.dlib.FaceDetectListener;
+
+import java.util.ArrayList;
 
 import hugo.weaving.DebugLog;
 import timber.log.Timber;
 
-public class CameraConnectionFragment extends Fragment {
+public class CameraConnectionFragment extends Fragment implements FaceDetectListener {
 
     private static final String TAG = "CameraConnectionFragment";
 
@@ -138,6 +140,11 @@ public class CameraConnectionFragment extends Fragment {
     private Button mCheckHead;
     private Button mSetZero;
 
+    /**
+     * 正在检测的顺序
+     */
+    private ArrayList<Integer> mMotions = new ArrayList<>(3);
+
     public static CameraConnectionFragment newInstance() {
         return new CameraConnectionFragment();
     }
@@ -225,43 +232,17 @@ public class CameraConnectionFragment extends Fragment {
             textureView.setSurfaceTextureListener(surfaceTextureListener);
         }
 
-        FaceDetectSDK.with().init(mOnGetPreviewListener,
-                getActivity().getApplicationContext(), inferenceHandler, backgroundHandler, new BitMapListener() {
+        mMotions.add(Constants.MOTION_MOUTH);
+        mMotions.add(Constants.MOTION_EYE);
+        mMotions.add(Constants.MOTION_HEAD);
 
-                    @Override
-                    public void onBitMap(Bitmap bitmap) {
-                        Message message = Message.obtain();
-                        message.what = 1;
-                        message.obj = bitmap;
-                        mMyHandler.sendMessage(message);
-                    }
-
-                    @Override
-                    public void action(int motion) {
-                        Message message = Message.obtain();
-                        message.what = 2;
-                        message.obj = motion;
-                        mMyHandler.sendMessage(message);
-                    }
-
-                    @Override
-                    public void onReady() {
-                        final Activity activity = getActivity();
-                        if (activity != null) {
-                            activity.runOnUiThread(
-                                    new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            mHintText.setText("已初始化完毕，请选择底部的检测类型");
-                                            mCheckEye.setEnabled(true);
-                                            mCheckHead.setEnabled(true);
-                                            mCheckMouth.setEnabled(true);
-                                            mSetZero.setEnabled(true);
-                                        }
-                                    });
-                        }
-                    }
-                });
+        FaceDetectSDK.with()
+                .setFaceDetectListener(this)
+                .setMotionList(mMotions, true)
+                .init(mOnGetPreviewListener
+                        , getActivity().getApplicationContext()
+                        , inferenceHandler
+                        , backgroundHandler);
     }
 
     @Override
@@ -313,6 +294,45 @@ public class CameraConnectionFragment extends Fragment {
     }
 
     private final OnGetImageListener mOnGetPreviewListener = new OnGetImageListener();
+
+    @Override
+    public void onBitMap(Bitmap bitmap) {
+        Message message = Message.obtain();
+        message.what = 1;
+        message.obj = bitmap;
+        mMyHandler.sendMessage(message);
+    }
+
+    @Override
+    public void action(int motion) {
+        Message message = Message.obtain();
+        message.what = 2;
+        message.obj = motion;
+        mMyHandler.sendMessage(message);
+    }
+
+    @Override
+    public void onReady() {
+        final Activity activity = getActivity();
+        if (activity != null) {
+            activity.runOnUiThread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            mHintText.setText("已初始化完毕，请选择底部的检测类型");
+                            mCheckEye.setEnabled(true);
+                            mCheckHead.setEnabled(true);
+                            mCheckMouth.setEnabled(true);
+                            mSetZero.setEnabled(true);
+                        }
+                    });
+        }
+    }
+
+    @Override
+    public void onComplete() {
+        this.getActivity().finish();
+    }
 
 
     /**
