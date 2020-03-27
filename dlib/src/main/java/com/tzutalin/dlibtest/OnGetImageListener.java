@@ -17,7 +17,6 @@
 package com.tzutalin.dlibtest;
 
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -73,8 +72,8 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
     void initialize(
             final Context context,
-            final AssetManager assetManager,
-            final Handler handler, BitMapListener frameLayout) {
+            final Handler handler,
+            BitMapListener frameLayout) {
         this.mContext = context;
         this.mInferenceHandler = handler;
 
@@ -84,7 +83,7 @@ public class OnGetImageListener implements OnImageAvailableListener {
 
     }
 
-    void deInitialize() {
+    public void deInitialize() {
         synchronized (OnGetImageListener.this) {
             if (processFrameQueue != null) {
                 processFrameQueue.release();

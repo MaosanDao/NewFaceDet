@@ -23,4 +23,6 @@ public interface BitMapListener {
      * @param motion motion
      */
     void action(int motion);
+
+    void onReady();
 }
