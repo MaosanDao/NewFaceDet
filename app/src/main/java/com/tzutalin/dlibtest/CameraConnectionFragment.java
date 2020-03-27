@@ -30,6 +30,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
@@ -304,11 +305,16 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     }
 
     @Override
-    public void action(int motion) {
+    public void onActionMotion(int motion) {
         Message message = Message.obtain();
         message.what = 2;
         message.obj = motion;
         mMyHandler.sendMessage(message);
+    }
+
+    @Override
+    public void onMotionCheckStart(int motion) {
+        Log.w("wangpei", "开始检测：" + motion);
     }
 
     @Override

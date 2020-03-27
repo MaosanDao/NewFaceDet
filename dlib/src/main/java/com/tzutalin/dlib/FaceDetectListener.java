@@ -22,7 +22,9 @@ public interface FaceDetectListener {
      *
      * @param motion motion
      */
-    void action(int motion);
+    void onActionMotion(int motion);
+
+    void onMotionCheckStart(int motion);
 
     void onReady();
 

@@ -80,6 +80,10 @@ public class ProcessWithQueue extends Thread {
     private boolean isCheckedHead = false;
     private boolean isCheckedMouth = false;
 
+    private boolean isCheckedEyeHint = false;
+    private boolean isCheckedHeadHint = false;
+    private boolean isCheckedMouthHint = false;
+
     private int detectingIndex = 0;
 
 
@@ -159,6 +163,11 @@ public class ProcessWithQueue extends Thread {
                                     results = mFaceDet.detect(frameData);
                                     if (results == null) {
                                         return;
+                                    }
+
+                                    if (!isCheckedEyeHint) {
+                                        isCheckedEyeHint = true;
+                                        faceDetectListener.onMotionCheckStart(Constants.MOTION_EYE);
                                     }
 
                                     if (results.size() != 0) {
@@ -250,7 +259,7 @@ public class ProcessWithQueue extends Thread {
                                                     if (!isCheckedEye) {
                                                         isCheckedEye = true;
                                                         detectingIndex++;
-                                                        faceDetectListener.action(Constants.MOTION_EYE);
+                                                        faceDetectListener.onActionMotion(Constants.MOTION_EYE);
                                                     }
                                                 }
                                             }
@@ -266,6 +275,11 @@ public class ProcessWithQueue extends Thread {
 
                                     if (results == null) {
                                         return;
+                                    }
+
+                                    if (!isCheckedHeadHint) {
+                                        isCheckedHeadHint = true;
+                                        faceDetectListener.onMotionCheckStart(Constants.MOTION_HEAD);
                                     }
 
                                     if (results.size() != 0) {
@@ -318,7 +332,7 @@ public class ProcessWithQueue extends Thread {
                                                 if (!isCheckedHead) {
                                                     isCheckedHead = true;
                                                     detectingIndex++;
-                                                    faceDetectListener.action(Constants.MOTION_HEAD);
+                                                    faceDetectListener.onActionMotion(Constants.MOTION_HEAD);
                                                 }
                                             }
 
@@ -333,6 +347,12 @@ public class ProcessWithQueue extends Thread {
                                     if (results == null) {
                                         return;
                                     }
+
+                                    if (!isCheckedMouthHint) {
+                                        isCheckedMouthHint = true;
+                                        faceDetectListener.onMotionCheckStart(Constants.MOTION_MOUTH);
+                                    }
+
                                     if (results.size() != 0) {
                                         for (final VisionDetRet ret : results) {
                                             float resizeRatio = 4f;
@@ -368,7 +388,7 @@ public class ProcessWithQueue extends Thread {
                                                         if (!isCheckedMouth) {
                                                             isCheckedMouth = true;
                                                             detectingIndex++;
-                                                            faceDetectListener.action(Constants.MOTION_MOUTH);
+                                                            faceDetectListener.onActionMotion(Constants.MOTION_MOUTH);
                                                         }
                                                     }
                                                 } else {
