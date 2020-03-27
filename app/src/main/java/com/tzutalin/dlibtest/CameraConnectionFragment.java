@@ -16,45 +16,21 @@
 
 package com.tzutalin.dlibtest;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.ImageFormat;
-import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.CaptureResult;
-import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.util.Log;
-import android.util.Range;
-import android.util.Size;
-import android.util.SparseArray;
-import android.util.SparseIntArray;
 import android.view.LayoutInflater;
-import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,41 +43,19 @@ import com.tzutalin.dlib.AutoFitTextureView;
 import com.tzutalin.dlib.BitMapListener;
 import com.tzutalin.dlib.Constants;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
 import hugo.weaving.DebugLog;
 import timber.log.Timber;
 
 public class CameraConnectionFragment extends Fragment {
 
-    /**
-     * The camera preview size will be chosen to be the smallest frame by pixel size capable of
-     * containing a DESIRED_SIZE x DESIRED_SIZE square.
-     */
-    private static final int MINIMUM_PREVIEW_SIZE = 320;
     private static final String TAG = "CameraConnectionFragment";
-    private static Range<Integer>[] fpsRanges;
 
     /**
      * Conversion from screen rotation to JPEG orientation.
      */
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final String FRAGMENT_DIALOG = "dialog";
 
     private MyHanlder mMyHandler;
-
-    static {
-        ORIENTATIONS.append(Surface.ROTATION_0, 0);
-        ORIENTATIONS.append(Surface.ROTATION_90, 90);
-        ORIENTATIONS.append(Surface.ROTATION_180, 180);
-        ORIENTATIONS.append(Surface.ROTATION_270, 270);
-    }
 
     /**
      * {@link android.view.TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -112,13 +66,13 @@ public class CameraConnectionFragment extends Fragment {
                 @Override
                 public void onSurfaceTextureAvailable(
                         final SurfaceTexture texture, final int width, final int height) {
-                    openCamera(width, height);
+                    FaceDetectSDK.with().openCamera(textureView, getActivity(), width, height);
                 }
 
                 @Override
                 public void onSurfaceTextureSizeChanged(
                         final SurfaceTexture texture, final int width, final int height) {
-                    configureTransform(width, height);
+                    FaceDetectSDK.with().configureTransform(getActivity(), textureView, width, height);
                 }
 
                 @Override
@@ -132,71 +86,10 @@ public class CameraConnectionFragment extends Fragment {
             };
 
     /**
-     * ID of the current {@link CameraDevice}.
-     */
-    private String cameraId;
-
-    /**
      * An {@link AutoFitTextureView} for camera preview.
      */
     private AutoFitTextureView textureView;
     private ImageView frameLayout;
-
-    /**
-     * A {@link CameraCaptureSession } for camera preview.
-     */
-    private CameraCaptureSession captureSession;
-
-    /**
-     * A reference to the opened {@link CameraDevice}.
-     */
-    private CameraDevice cameraDevice;
-
-    /**
-     * The {@link android.util.Size} of camera preview.
-     */
-    private Size previewSize;
-
-    /**
-     * {@link android.hardware.camera2.CameraDevice.StateCallback}
-     * is called when {@link CameraDevice} changes its state.
-     */
-    private final CameraDevice.StateCallback stateCallback =
-            new CameraDevice.StateCallback() {
-                @Override
-                public void onOpened(final CameraDevice cd) {
-                    // This method is called when the camera is opened.  We start camera preview here.
-                    cameraOpenCloseLock.release();
-                    cameraDevice = cd;
-                    createCameraPreviewSession();
-                }
-
-                @Override
-                public void onDisconnected(final CameraDevice cd) {
-                    cameraOpenCloseLock.release();
-                    cd.close();
-                    cameraDevice = null;
-
-                    if (mOnGetPreviewListener != null) {
-                        mOnGetPreviewListener.deInitialize();
-                    }
-                }
-
-                @Override
-                public void onError(final CameraDevice cd, final int error) {
-                    cameraOpenCloseLock.release();
-                    cd.close();
-                    cameraDevice = null;
-                    final Activity activity = getActivity();
-                    if (null != activity) {
-                        activity.finish();
-                    }
-
-                    if (mOnGetPreviewListener != null) {
-                        mOnGetPreviewListener.deInitialize();
-                    }
-                }
-            };
 
     /**
      * 用于运行不应阻塞UI的任务的附加线程。
@@ -218,25 +111,6 @@ public class CameraConnectionFragment extends Fragment {
      */
     private Handler inferenceHandler;
 
-    /**
-     * An {@link ImageReader} that handles preview frame capture.
-     */
-    private ImageReader previewReader;
-
-    /**
-     * {@link android.hardware.camera2.CaptureRequest.Builder} for the camera preview
-     */
-    private CaptureRequest.Builder previewRequestBuilder;
-
-    /**
-     * {@link CaptureRequest} generated by {@link #previewRequestBuilder}
-     */
-    private CaptureRequest previewRequest;
-
-    /**
-     * A {@link Semaphore} to prevent the app from exiting before closing the camera.
-     */
-    private final Semaphore cameraOpenCloseLock = new Semaphore(1);
 
     /**
      * Shows a {@link Toast} on the UI thread.
@@ -264,43 +138,6 @@ public class CameraConnectionFragment extends Fragment {
     private Button mCheckHead;
     private Button mSetZero;
 
-    /**
-     * Given {@code choices} of {@code Size}s supported by a camera, chooses the smallest one whose
-     * width and height are at least as large as the respective requested values, and whose aspect
-     * ratio matches with the specified value.
-     *
-     * @param choices     The list of sizes that the camera supports for the intended output class
-     * @param width       The minimum desired width
-     * @param height      The minimum desired height
-     * @param aspectRatio The aspect ratio
-     * @return The optimal {@code Size}, or an arbitrary one if none were big enough
-     */
-    @SuppressLint("LongLogTag")
-    @DebugLog
-    private static Size chooseOptimalSize(
-            final Size[] choices, final int width, final int height, final Size aspectRatio) {
-        // Collect the supported resolutions that are at least as big as the preview Surface
-        final List<Size> bigEnough = new ArrayList<Size>();
-        for (final Size option : choices) {
-            if (option.getHeight() >= MINIMUM_PREVIEW_SIZE && option.getWidth() >= MINIMUM_PREVIEW_SIZE) {
-                Timber.tag(TAG).i("Adding size: " + option.getWidth() + "x" + option.getHeight());
-                bigEnough.add(option);
-            } else {
-                Timber.tag(TAG).i("Not adding size: " + option.getWidth() + "x" + option.getHeight());
-            }
-        }
-
-        // Pick the smallest of those, assuming we found any
-        if (bigEnough.size() > 0) {
-            final Size chosenSize = Collections.min(bigEnough, new CompareSizesByArea());
-            Timber.tag(TAG).i("Chosen size: " + chosenSize.getWidth() + "x" + chosenSize.getHeight());
-            return chosenSize;
-        } else {
-            Timber.tag(TAG).e("Couldn't find any suitable preview size");
-            return choices[0];
-        }
-    }
-
     public static CameraConnectionFragment newInstance() {
         return new CameraConnectionFragment();
     }
@@ -313,13 +150,13 @@ public class CameraConnectionFragment extends Fragment {
 
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
-        textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        frameLayout = (ImageView) view.findViewById(R.id.frameLayout);
-        mHintText = (TextView) view.findViewById(R.id.hint_text);
-        mCheckEye = (Button) view.findViewById(R.id.check_eye);
-        mCheckHead = (Button) view.findViewById(R.id.check_head);
-        mCheckMouth = (Button) view.findViewById(R.id.check_mouth);
-        mSetZero = (Button) view.findViewById(R.id.set_zero);
+        textureView = view.findViewById(R.id.texture);
+        frameLayout = view.findViewById(R.id.frameLayout);
+        mHintText = view.findViewById(R.id.hint_text);
+        mCheckEye = view.findViewById(R.id.check_eye);
+        mCheckHead = view.findViewById(R.id.check_head);
+        mCheckMouth = view.findViewById(R.id.check_mouth);
+        mSetZero = view.findViewById(R.id.set_zero);
 
         mHintText.setText("正在初始化中，请不要点击");
         mCheckEye.setEnabled(false);
@@ -383,163 +220,61 @@ public class CameraConnectionFragment extends Fragment {
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
         if (textureView.isAvailable()) {
-            openCamera(textureView.getWidth(), textureView.getHeight());
+            FaceDetectSDK.with().openCamera(textureView, getActivity(), textureView.getWidth(), textureView.getHeight());
         } else {
             textureView.setSurfaceTextureListener(surfaceTextureListener);
         }
+
+        FaceDetectSDK.with().init(mOnGetPreviewListener,
+                getActivity().getApplicationContext(), inferenceHandler, backgroundHandler, new BitMapListener() {
+
+                    @Override
+                    public void onBitMap(Bitmap bitmap) {
+                        Message message = Message.obtain();
+                        message.what = 1;
+                        message.obj = bitmap;
+                        mMyHandler.sendMessage(message);
+                    }
+
+                    @Override
+                    public void action(int motion) {
+                        Message message = Message.obtain();
+                        message.what = 2;
+                        message.obj = motion;
+                        mMyHandler.sendMessage(message);
+                    }
+
+                    @Override
+                    public void onReady() {
+                        final Activity activity = getActivity();
+                        if (activity != null) {
+                            activity.runOnUiThread(
+                                    new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            mHintText.setText("已初始化完毕，请选择底部的检测类型");
+                                            mCheckEye.setEnabled(true);
+                                            mCheckHead.setEnabled(true);
+                                            mCheckMouth.setEnabled(true);
+                                            mSetZero.setEnabled(true);
+                                        }
+                                    });
+                        }
+                    }
+                });
     }
 
     @Override
     public void onPause() {
-        closeCamera();
+        FaceDetectSDK.with().closeCamera();
         stopBackgroundThread();
         super.onPause();
     }
 
-    /**
-     * Sets up member variables related to camera.
-     *
-     * @param width  The width of available size for camera preview
-     * @param height The height of available size for camera preview
-     */
-    @DebugLog
-    @SuppressLint("LongLogTag")
-    private void setUpCameraOutputs(final int width, final int height) {
-        final Activity activity = getActivity();
-        final CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
-        try {
-            SparseArray<Integer> cameraFaceTypeMap = new SparseArray<>();
-            // 检查相机设备的正面类型
-            for (final String cameraId : manager.getCameraIdList()) {
-                final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-                final Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    if (cameraFaceTypeMap.get(CameraCharacteristics.LENS_FACING_FRONT) != null) {
-                        cameraFaceTypeMap.append(CameraCharacteristics.LENS_FACING_FRONT, cameraFaceTypeMap.get(CameraCharacteristics.LENS_FACING_FRONT) + 1);
-                    } else {
-                        cameraFaceTypeMap.append(CameraCharacteristics.LENS_FACING_FRONT, 1);
-                    }
-                }
-
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
-                    if (cameraFaceTypeMap.get(CameraCharacteristics.LENS_FACING_FRONT) != null) {
-                        cameraFaceTypeMap.append(CameraCharacteristics.LENS_FACING_BACK, cameraFaceTypeMap.get(CameraCharacteristics.LENS_FACING_BACK) + 1);
-                    } else {
-                        cameraFaceTypeMap.append(CameraCharacteristics.LENS_FACING_BACK, 1);
-                    }
-                }
-            }
-
-            Integer num_facing_back_camera = cameraFaceTypeMap.get(CameraCharacteristics.LENS_FACING_BACK);
-            for (final String cameraId : manager.getCameraIdList()) {
-                final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-                final Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                // 如果存在面向后置摄像头或面向外置摄像头，则我们不会使用面向前置摄像头
-                if (num_facing_back_camera != null && num_facing_back_camera > 0) {
-                    // 如果还有其他面向相机的设备类型，则在此示例中我们不使用前置摄像头
-                    if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
-                        continue;
-                    }
-                }
-
-                final StreamConfigurationMap map =
-                        characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-                if (map == null) {
-                    continue;
-                }
-
-                // 对于静态图像捕获，我们使用最大的可用尺寸.
-                final Size largest =
-                        Collections.max(
-                                Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888)),
-                                new CompareSizesByArea());
-
-                // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
-                // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
-                // garbage capture data.
-                previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class), width, height, largest);
-
-                // We fit the aspect ratio of TextureView to the size of preview we picked.
-                final int orientation = getResources().getConfiguration().orientation;
-                if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    textureView.setAspectRatio(previewSize.getWidth(), previewSize.getHeight());
-                } else {
-                    textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
-                }
-
-                CameraConnectionFragment.this.cameraId = cameraId;
-                return;
-            }
-        } catch (final CameraAccessException e) {
-            Timber.tag(TAG).e("Exception!", e);
-        } catch (final NullPointerException e) {
-            // 当前，使用Camera2API但在运行此代码的设备上不支持时会引发NPE.
-            ErrorDialog.newInstance(getString(R.string.camera_error))
-                    .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-        }
-    }
-
-    /**
-     * Opens the camera specified by {@link CameraConnectionFragment#cameraId}.
-     */
-    @SuppressLint("LongLogTag")
-    @DebugLog
-    private void openCamera(final int width, final int height) {
-        Log.d(TAG, "width " + width + "height " + height);
-        setUpCameraOutputs(width, height);
-        configureTransform(width, height);
-        final Activity activity = getActivity();
-        final CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
-        if (manager == null) {
-            return;
-        }
-
-        try {
-            if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                throw new RuntimeException("Time out waiting to lock camera opening.");
-            }
-            if (ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                Timber.tag(TAG).w("checkSelfPermission CAMERA");
-            }
-            //we just use facing front camera to detect
-            manager.openCamera("1", stateCallback, backgroundHandler);
-            Timber.tag(TAG).d("open Camera");
-        } catch (final CameraAccessException e) {
-            Timber.tag(TAG).e("Exception!", e);
-        } catch (final InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
-        }
-    }
-
-    /**
-     * Closes the current {@link CameraDevice}.
-     */
-    @DebugLog
-    private void closeCamera() {
-        try {
-            cameraOpenCloseLock.acquire();
-            if (null != captureSession) {
-                captureSession.close();
-                captureSession = null;
-            }
-            if (null != cameraDevice) {
-                cameraDevice.close();
-                cameraDevice = null;
-            }
-            if (null != previewReader) {
-                previewReader.close();
-                previewReader = null;
-            }
-            if (null != mOnGetPreviewListener) {
-                mOnGetPreviewListener.deInitialize();
-            }
-        } catch (final InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
-        } finally {
-            cameraOpenCloseLock.release();
-        }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        FaceDetectSDK.with().destroy();
     }
 
     /**
@@ -579,132 +314,10 @@ public class CameraConnectionFragment extends Fragment {
 
     private final OnGetImageListener mOnGetPreviewListener = new OnGetImageListener();
 
-    private final CameraCaptureSession.CaptureCallback captureCallback =
-            new CameraCaptureSession.CaptureCallback() {
-                @Override
-                public void onCaptureProgressed(
-                        @NonNull final CameraCaptureSession session,
-                        @NonNull final CaptureRequest request,
-                        @NonNull final CaptureResult partialResult) {
-                }
-
-                @Override
-                public void onCaptureCompleted(
-                        @NonNull final CameraCaptureSession session,
-                        @NonNull final CaptureRequest request,
-                        @NonNull final TotalCaptureResult result) {
-                }
-            };
 
     /**
      * Creates a new {@link CameraCaptureSession} for camera preview.
      */
-    @SuppressLint("LongLogTag")
-    @DebugLog
-    private void createCameraPreviewSession() {
-        try {
-//            final SurfaceTexture texture = textureView.getSurfaceTexture();
-//            assert texture != null;
-
-            // 我们将默认缓冲区的大小配置为所需的摄像机预览的大小
-//            texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-            //texture.setOnFrameAvailableListener();
-
-            // 这是我们需要开始预览的输出Surface.
-//            final Surface surface = new Surface(texture);
-
-            // 我们使用输出Surface设置一个CaptureRequest.Builder
-            previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            //previewRequestBuilder.addTarget(surface);
-
-            // 设置预览画面的帧率 视实际情况而定选择一个帧率范围
-//            previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRanges[0]);
-
-            // 为预览框架创建阅读器
-            previewReader =
-                    ImageReader.newInstance(
-                            previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
-
-            previewReader.setOnImageAvailableListener(mOnGetPreviewListener, backgroundHandler);
-            previewRequestBuilder.addTarget(previewReader.getSurface());
-
-            // 在这里，我们创建了CameraCaptureSession来进行相机预览
-            cameraDevice.createCaptureSession(
-                    //Arrays.asList(surface,previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
-                    Arrays.asList(previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
-
-                        @Override
-                        public void onConfigured(@NonNull final CameraCaptureSession cameraCaptureSession) {
-                            // 相机已经关闭
-                            if (null == cameraDevice) {
-                                return;
-                            }
-
-                            // 会话准备就绪后，我们开始显示预览.
-                            captureSession = cameraCaptureSession;
-                            try {
-                                // 自动对焦应连续进行相机预览.
-                                previewRequestBuilder.set(
-                                        CaptureRequest.CONTROL_AF_MODE,
-                                        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                                // 必要时会自动启用闪光灯.
-                                previewRequestBuilder.set(
-                                        CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-
-                                // 最后，我们开始显示摄像机预览。
-                                previewRequest = previewRequestBuilder.build();
-                                captureSession.setRepeatingRequest(
-                                        previewRequest, captureCallback, backgroundHandler);
-                            } catch (final CameraAccessException e) {
-                                Timber.tag(TAG).e("Exception!", e);
-                            }
-                        }
-
-                        @Override
-                        public void onConfigureFailed(@NonNull final CameraCaptureSession cameraCaptureSession) {
-                            showToast("Failed");
-                        }
-                    },
-                    null);
-        } catch (final CameraAccessException e) {
-            Timber.tag(TAG).e("Exception!", e);
-        }
-
-        mOnGetPreviewListener.initialize(getActivity().getApplicationContext(), getActivity().getAssets(), inferenceHandler, new BitMapListener() {
-
-            @Override
-            public void onBitMap(Bitmap bitmap) {
-                Message message = Message.obtain();
-                message.what = 1;
-                message.obj = bitmap;
-                mMyHandler.sendMessage(message);
-            }
-
-            @Override
-            public void action(int motion) {
-                Message message = Message.obtain();
-                message.what = 2;
-                message.obj = motion;
-                mMyHandler.sendMessage(message);
-            }
-        });
-
-        final Activity activity = getActivity();
-        if (activity != null) {
-            activity.runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            mHintText.setText("已初始化完毕，请选择底部的检测类型");
-                            mCheckEye.setEnabled(true);
-                            mCheckHead.setEnabled(true);
-                            mCheckMouth.setEnabled(true);
-                            mSetZero.setEnabled(true);
-                        }
-                    });
-        }
-    }
-
     private class MyHanlder extends Handler {
         @Override
         public void handleMessage(Message msg) {
@@ -733,53 +346,6 @@ public class CameraConnectionFragment extends Fragment {
                     break;
                 default:
             }
-        }
-    }
-
-    /**
-     * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
-     * This method should be called after the camera preview size is determined in
-     * setUpCameraOutputs and also the size of `mTextureView` is fixed.
-     *
-     * @param viewWidth  The width of `mTextureView`
-     * @param viewHeight The height of `mTextureView`
-     */
-    @DebugLog
-    private void configureTransform(final int viewWidth, final int viewHeight) {
-        final Activity activity = getActivity();
-        if (null == textureView || null == previewSize || null == activity) {
-            return;
-        }
-        final int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-        final Matrix matrix = new Matrix();
-        final RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        final RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
-        final float centerX = viewRect.centerX();
-        final float centerY = viewRect.centerY();
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-            final float scale =
-                    Math.max(
-                            (float) viewHeight / previewSize.getHeight(),
-                            (float) viewWidth / previewSize.getWidth());
-            matrix.postScale(scale, scale, centerX, centerY);
-            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-        } else if (Surface.ROTATION_180 == rotation) {
-            matrix.postRotate(180, centerX, centerY);
-        }
-        textureView.setTransform(matrix);
-    }
-
-    /**
-     * Compares two {@code Size}s based on their areas.
-     */
-    static class CompareSizesByArea implements Comparator<Size> {
-        @Override
-        public int compare(final Size lhs, final Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum(
-                    (long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
         }
     }
 
