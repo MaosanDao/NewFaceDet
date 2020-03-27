@@ -5,12 +5,12 @@ version = "${rootProject.ext.releaseVersionName}"
 group = "com.tzutalin.dlib-android-app"
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    compileSdkVersion 28
+    buildToolsVersion '25.0.3'
 
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 25
+        minSdkVersion 22
+        targetSdkVersion 28
         versionCode 1
         versionName "${rootProject.ext.releaseVersionName}"
 

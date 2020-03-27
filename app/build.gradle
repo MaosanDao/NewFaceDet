@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.tzutalin.dlibtest"
-        minSdkVersion 21
+        minSdkVersion 22
         targetSdkVersion 29
         versionCode 1
         versionName "${rootProject.ext.releaseVersionName}"
@@ -49,8 +49,8 @@ dependencies {
     implementation 'com.android.support:design:25.2.0'
     implementation 'com.github.dexafree:materiallist:3.0.1'
     implementation 'com.jakewharton.timber:timber:4.5.1'
-//    implementation project(':dlib')
-    implementation 'com.github.MaosanDao:NewFaceDet:1.0'
+    implementation project(':dlib')
+//    implementation 'com.github.MaosanDao:NewFaceDet:1.6'
     annotationProcessor "org.androidannotations:androidannotations:$AAVersion"
     implementation "org.androidannotations:androidannotations-api:$AAVersion"
 
