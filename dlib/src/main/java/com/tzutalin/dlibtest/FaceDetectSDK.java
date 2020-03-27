@@ -29,13 +29,15 @@ import android.util.SparseArray;
 import android.view.Surface;
 
 import com.tzutalin.dlib.AutoFitTextureView;
-import com.tzutalin.dlib.BitMapListener;
+import com.tzutalin.dlib.Constants;
+import com.tzutalin.dlib.FaceDetectListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -94,10 +96,65 @@ public class FaceDetectSDK {
      */
     private Handler backgroundHandler;
 
+    /**
+     * 视频每一帧的监听
+     */
     private OnGetImageListener mOnGetPreviewListener;
+
+    /**
+     * 内部运行的Handler
+     */
     private Handler mHandler;
+
+    /**
+     * Context
+     */
     private Context mContext;
-    private BitMapListener mListener;
+
+    /**
+     * 检测回调
+     */
+    private FaceDetectListener mListener;
+
+    /**
+     * 存储的全部检测类型
+     */
+    private ArrayList<Integer> mMotions = new ArrayList<>(3);
+
+    /**
+     * 正在检测的序号
+     */
+    private int detectingIndex = 0;
+
+    /**
+     * 是否直接设置检测类型
+     */
+    private boolean isSetMotions = false;
+
+    /**
+     * 随机的校验次数
+     */
+    private int mMotionSum;
+
+    /**
+     * 最后的检测顺序
+     */
+    private ArrayList<Integer> mLastMotions;
+
+    /**
+     * 是否只支持张嘴检测
+     */
+    private boolean isOnlyMouth = false;
+
+    /**
+     * 是否只支持摇头检测
+     */
+    private boolean isOnlyHead = false;
+
+    /**
+     * 是否只支持眨眼检测
+     */
+    private boolean isOnlyEye = false;
 
     private FaceDetectSDK() {
     }
@@ -115,6 +172,130 @@ public class FaceDetectSDK {
 
     public void destroy() {
         mContext = null;
+    }
+
+    /**
+     * 重置数据
+     */
+    private void resetMotionsList() {
+        mMotions.clear();
+        mMotions.add(Constants.MOTION_MOUTH);
+        mMotions.add(Constants.MOTION_EYE);
+        mMotions.add(Constants.MOTION_HEAD);
+    }
+
+    /**
+     * 初始化
+     *
+     * @param mOnGetPreviewListener 每一帧的监听
+     * @param context               Context
+     * @param inferenceHandler      每一帧数据处理的Handler
+     * @param backgroundHandler     相机显示Handler
+     */
+    public FaceDetectSDK init(OnGetImageListener mOnGetPreviewListener, Context context
+            , Handler inferenceHandler, Handler backgroundHandler) {
+        this.mOnGetPreviewListener = mOnGetPreviewListener;
+        this.mContext = context;
+        this.mHandler = inferenceHandler;
+        this.backgroundHandler = backgroundHandler;
+
+
+        //重置数据
+        resetMotionsList();
+        if (!isSetMotions) {
+            //先随机看几种验证方式
+            mMotionSum = Constants.MOTIONS_NUM;
+            //随机的最后校验顺序
+            mLastMotions = getRandomTypeFromMotionsList(mMotionSum);
+        }
+
+        //重置数据
+        resetMotionsList();
+
+        return this;
+    }
+
+    /**
+     * 设置监听
+     */
+    public FaceDetectSDK setFaceDetectListener(FaceDetectListener listener) {
+        this.mListener = listener;
+        return this;
+    }
+
+    public FaceDetectSDK setMotionList(ArrayList<Integer> motions, boolean isRandom) {
+        mMotionSum = motions.size();
+        if (isRandom) {
+            Collections.shuffle(motions);
+            this.mLastMotions = motions;
+        } else {
+            this.mLastMotions = motions;
+        }
+
+        isSetMotions = true;
+
+        return this;
+    }
+
+    /**
+     * 设置只检测张嘴
+     */
+    public FaceDetectSDK setMouthMotionType(boolean isOnlyMouth) {
+        this.isOnlyMouth = isOnlyMouth;
+
+        return this;
+    }
+
+    /**
+     * 设置只检测摇头
+     */
+    public FaceDetectSDK setHeadMotionType(boolean isOnlyHead) {
+        this.isOnlyHead = isOnlyHead;
+
+        return this;
+    }
+
+    /**
+     * 设置只检测眨眼
+     */
+    public FaceDetectSDK setEyeMotionType(boolean isOnlyEye) {
+        this.isOnlyEye = isOnlyEye;
+        return this;
+    }
+
+    /**
+     * 从校验类型中随机获取sum种类型
+     */
+    private ArrayList<Integer> getRandomTypeFromMotionsList(int sum) {
+        ArrayList<Integer> motions = new ArrayList<>(sum);
+        Random random = new Random();
+
+        if (sum == 1) {
+            if (isOnlyMouth) {
+                motions.add(Constants.MOTION_MOUTH);
+            } else if (isOnlyEye) {
+                motions.add(Constants.MOTION_EYE);
+            } else if (isOnlyHead) {
+                motions.add(Constants.MOTION_HEAD);
+            } else {
+                for (int i = 0; i < sum; i++) {
+                    int index = random.nextInt(mMotions.size());
+                    motions.add(mMotions.get(index));
+                    mMotions.remove(index);
+                }
+            }
+        } else {
+            for (int i = 0; i < sum; i++) {
+                int index = random.nextInt(mMotions.size());
+                motions.add(mMotions.get(index));
+                mMotions.remove(index);
+            }
+        }
+
+
+        //打乱顺序
+        Collections.shuffle(motions);
+        return motions;
     }
 
     private CameraCaptureSession.CaptureCallback getCaptureCallback() {
@@ -171,22 +352,6 @@ public class FaceDetectSDK {
         }
     }
 
-    private CompareSizesByArea getCompareSizesByArea() {
-        return new CompareSizesByArea();
-    }
-
-    public void init(OnGetImageListener mOnGetPreviewListener, Context context
-            , Handler inferenceHandler, Handler backgroundHandler, BitMapListener listener) {
-        this.mOnGetPreviewListener = mOnGetPreviewListener;
-        this.mContext = context;
-        this.mHandler = inferenceHandler;
-        this.backgroundHandler = backgroundHandler;
-        this.mListener = listener;
-    }
-
-    /**
-     * Compares two {@code Size}s based on their areas.
-     */
     private class CompareSizesByArea implements Comparator<Size> {
         @Override
         public int compare(final Size lhs, final Size rhs) {
@@ -194,6 +359,7 @@ public class FaceDetectSDK {
             return Long.signum(
                     (long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
         }
+
     }
 
     /**
@@ -258,7 +424,7 @@ public class FaceDetectSDK {
                 final Size largest =
                         Collections.max(
                                 Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888)),
-                                FaceDetectSDK.with().getCompareSizesByArea());
+                                new CompareSizesByArea());
 
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
                 // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
@@ -278,10 +444,6 @@ public class FaceDetectSDK {
             e.printStackTrace();
         }
 
-    }
-
-    private Size getPreviewSize() {
-        return mPreviewSize;
     }
 
     public void closeCamera() {
@@ -474,10 +636,8 @@ public class FaceDetectSDK {
                     },
                     null);
 
-            mOnGetPreviewListener.initialize(mContext, mHandler, mListener);
-
+            mOnGetPreviewListener.initialize(mContext, mHandler,mLastMotions, mListener);
             mListener.onReady();
-
         } catch (final CameraAccessException e) {
             e.printStackTrace();
         }

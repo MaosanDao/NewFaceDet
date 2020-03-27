@@ -33,9 +33,10 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.TextView;
 
-import com.tzutalin.dlib.BitMapListener;
+import com.tzutalin.dlib.FaceDetectListener;
 import com.tzutalin.dlib.ProcessWithQueue;
 
+import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -73,13 +74,14 @@ public class OnGetImageListener implements OnImageAvailableListener {
     void initialize(
             final Context context,
             final Handler handler,
-            BitMapListener frameLayout) {
+            ArrayList<Integer> lastCheckMotions,
+            FaceDetectListener faceDetectListener) {
         this.mContext = context;
         this.mInferenceHandler = handler;
 
         frameQueue = new LinkedBlockingQueue<>();
         frameQueueForDisplay = new LinkedBlockingQueue<>();
-        processFrameQueue = new ProcessWithQueue(frameQueue, frameQueueForDisplay, mContext, handler, frameLayout);
+        processFrameQueue = new ProcessWithQueue(frameQueue, frameQueueForDisplay, mContext, handler, lastCheckMotions, faceDetectListener);
 
     }
 

@@ -8,7 +8,7 @@ import android.graphics.Bitmap;
  * @author Wangpei
  * Email: wangpei@bamboocloud.cn
  */
-public interface BitMapListener {
+public interface FaceDetectListener {
 
     /**
      * data For Each Frame
@@ -25,4 +25,6 @@ public interface BitMapListener {
     void action(int motion);
 
     void onReady();
+
+    void onComplete();
 }

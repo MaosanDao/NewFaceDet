@@ -16,6 +16,11 @@ public class Constants {
     public final static int NO_SET = 4;
 
     /**
+     * 默认的检测个数
+     */
+    public static int MOTIONS_NUM = 2;
+
+    /**
      * getFaceShapeModelPath
      *
      * @return default face shape model path

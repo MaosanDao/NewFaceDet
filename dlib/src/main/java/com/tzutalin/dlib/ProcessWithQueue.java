@@ -34,11 +34,8 @@ public class ProcessWithQueue extends Thread {
     private Handler mInferenceHandler;
     private Context mContext;
     private FaceDet mFaceDet;
-    private BitMapListener mWindow;
+    private FaceDetectListener faceDetectListener;
     private Paint mFaceLandmardkPaint;
-
-    private int mframeNum = 0;
-
     private double ear = 0;
     private int x = 0;
     private boolean ear_array_removed = false;
@@ -77,17 +74,26 @@ public class ProcessWithQueue extends Thread {
     private boolean isTurnLeft = false;
 
 
+    private ArrayList<Integer> mLastMotions;
+
+    private boolean isCheckedEye = false;
+    private boolean isCheckedHead = false;
+    private boolean isCheckedMouth = false;
+
+    private int detectingIndex = 0;
+
+
     public ProcessWithQueue(LinkedBlockingQueue<Bitmap> frameQueue
             , LinkedBlockingQueue<Bitmap> frameQueueForDisplay, Context context
-            , Handler handler, BitMapListener frameLayout) {
+            , Handler handler, ArrayList<Integer> mLastMotions, FaceDetectListener faceDetectListener) {
         this.mContext = context;
         this.mInferenceHandler = handler;
+        this.mLastMotions = mLastMotions;
+        this.faceDetectListener = faceDetectListener;
 
         mQueue = frameQueue;
         frameForDisplay = frameQueueForDisplay;
-
         mFaceDet = new FaceDet(Constants.getFaceShapeModelPath());
-        mWindow = frameLayout;
 
         mFaceLandmardkPaint = new Paint();
         mFaceLandmardkPaint.setColor(Color.RED);
@@ -132,10 +138,21 @@ public class ProcessWithQueue extends Thread {
                     new Runnable() {
                         @Override
                         public void run() {
-                            mframeNum++;
+
+                            if (mLastMotions.size() > 0) {
+                                if (detectingIndex == mLastMotions.size()) {
+                                    detectingIndex = 0;
+                                    mInferenceHandler.removeCallbacks(this);
+                                    faceDetectListener.onComplete();
+                                    return;
+                                }
+                            }
+
+                            checkMode = mLastMotions.get(detectingIndex);
+
                             switch (checkMode) {
                                 case Constants.NO_SET: {
-                                    mWindow.onBitMap(framefordisplay);
+                                    faceDetectListener.onBitMap(framefordisplay);
                                 }
                                 break;
                                 case Constants.MOTION_EYE: {
@@ -230,14 +247,18 @@ public class ProcessWithQueue extends Thread {
 
                                                     blink += 1;
                                                     closeEyes_drop = -5;
-                                                    mWindow.action(Constants.MOTION_EYE);
+                                                    if (!isCheckedEye) {
+                                                        isCheckedEye = true;
+                                                        detectingIndex++;
+                                                        faceDetectListener.action(Constants.MOTION_EYE);
+                                                    }
                                                 }
                                             }
                                         }
 
                                     }
 
-                                    mWindow.onBitMap(framefordisplay);
+                                    faceDetectListener.onBitMap(framefordisplay);
                                 }
                                 break;
                                 case Constants.MOTION_HEAD: {
@@ -294,13 +315,17 @@ public class ProcessWithQueue extends Thread {
                                                 isTurnRight = false;
                                                 isTurnLeft = false;
 
-                                                mWindow.action(Constants.MOTION_HEAD);
+                                                if (!isCheckedHead) {
+                                                    isCheckedHead = true;
+                                                    detectingIndex++;
+                                                    faceDetectListener.action(Constants.MOTION_HEAD);
+                                                }
                                             }
 
                                         }
 
                                     }
-                                    mWindow.onBitMap(framefordisplay);
+                                    faceDetectListener.onBitMap(framefordisplay);
                                 }
                                 break;
                                 case Constants.MOTION_MOUTH: {
@@ -340,7 +365,11 @@ public class ProcessWithQueue extends Thread {
                                                 if (leftEAR >= 0.50) {
                                                     if (!isOpenMouth) {
                                                         isOpenMouth = true;
-                                                        mWindow.action(Constants.MOTION_MOUTH);
+                                                        if (!isCheckedMouth) {
+                                                            isCheckedMouth = true;
+                                                            detectingIndex++;
+                                                            faceDetectListener.action(Constants.MOTION_MOUTH);
+                                                        }
                                                     }
                                                 } else {
                                                     isOpenMouth = false;
@@ -352,12 +381,11 @@ public class ProcessWithQueue extends Thread {
                                         isNoFaceTime = System.currentTimeMillis();
                                     }
                                     long endTime = System.currentTimeMillis();
-                                    mWindow.onBitMap(framefordisplay);
+                                    faceDetectListener.onBitMap(framefordisplay);
                                 }
                                 break;
                             }
                         }
-
                     });
         }
     }
