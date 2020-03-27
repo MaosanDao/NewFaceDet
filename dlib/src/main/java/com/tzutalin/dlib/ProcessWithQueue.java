@@ -127,17 +127,13 @@ public class ProcessWithQueue extends Thread {
     }
 
     private void processFrame(final Bitmap frameData, final Bitmap framefordisplay) {
-
         if (frameData != null) {
             mInferenceHandler.post(
                     new Runnable() {
                         @Override
                         public void run() {
                             mframeNum++;
-//                          saveBitmap(frameData, "frames", String.valueOf(mframeNum) + ".jpg");
-
                             switch (checkMode) {
-
                                 case Constants.NO_SET: {
                                     mWindow.onBitMap(framefordisplay);
                                 }
@@ -167,12 +163,10 @@ public class ProcessWithQueue extends Thread {
                                                     int pointX = (int) (point.x * resizeRatio);
                                                     int pointY = (int) (point.y * resizeRatio);
                                                     leftEye[i - 37] = new Point(pointX, pointY);
-                                                    //canvas.drawCircle(pointX, pointY, 2, mFaceLandmardkPaint);
                                                 } else if (i > 42 && i < 49) {
                                                     int pointX = (int) (point.x * resizeRatio);
                                                     int pointY = (int) (point.y * resizeRatio);
                                                     rightEye[i - 43] = new Point(pointX, pointY);
-                                                    //canvas.drawCircle(pointX, pointY, 2, mFaceLandmardkPaint);
                                                 }
                                                 if (i > 48) {
                                                     break;
@@ -182,7 +176,6 @@ public class ProcessWithQueue extends Thread {
 
                                             canvas.drawPath(getPath(leftEye), mFaceLandmardkPaint);
                                             canvas.drawPath(getPath(rightEye), mFaceLandmardkPaint);
-                                            //saveBitmap(frameData, "Pframes", String.valueOf(mframeNum) + ".jpg");
 
                                             double leftEAR = eye_aspect_ratio(leftEye);
                                             double rightEAR = eye_aspect_ratio(rightEye);
@@ -244,14 +237,10 @@ public class ProcessWithQueue extends Thread {
 
                                     }
 
-
                                     mWindow.onBitMap(framefordisplay);
                                 }
                                 break;
                                 case Constants.MOTION_HEAD: {
-
-                                    long startTime = System.currentTimeMillis();
-
                                     results = mFaceDet.detect(frameData);
 
                                     if (results == null) {
@@ -345,57 +334,6 @@ public class ProcessWithQueue extends Thread {
                                             canvas.drawPath(getPath(leftEye), mFaceLandmardkPaint);
 
                                             double leftEAR = mouth_aspect_ratio(leftEye);
-
-                                            if (leftEAR != 0) {
-
-                                                x += 1;
-                                                ear_array.add(leftEAR);
-                                                ax.add(x);
-                                                ear_array_removed = filter_unexpected_values(ear_array, ax, THRESH);
-
-                                                if (ear_array.size() > 2 && !ear_array_removed) {
-                                                    if (ear_array.get(ear_array.size() - 2) > ear_array.get(ear_array.size() - 3)) {
-                                                        continuous_Increment += 1;
-                                                        if (continuous_Decrement != 0) {
-                                                            drop = ear_array.get(ear_array.size() - 3) - ear_array.get(ear_array.size() - 3 - continuous_Decrement);
-                                                            if (continuous_Decrement != 1) {
-                                                                drop_array.add(drop);
-                                                                drop_array_appended = true;
-                                                            }
-                                                            temp = continuous_Decrement;
-                                                            continuous_Decrement = 0;
-                                                        }
-                                                    } else if (ear_array.get(ear_array.size() - 2) < ear_array.get(ear_array.size() - 3)) {
-                                                        continuous_Decrement += 1;
-                                                        if (continuous_Increment != 0) {
-                                                            drop = ear_array.get(ear_array.size() - 3) - ear_array.get(ear_array.size() - 3 - continuous_Increment);
-                                                            if (continuous_Increment != 1) {
-                                                                drop_array.add(drop);
-                                                                drop_array_appended = true;
-                                                            }
-                                                            temp = continuous_Increment;
-                                                            continuous_Increment = 0;
-                                                        }
-                                                    }
-                                                }
-
-                                                if (drop_array_appended) {
-                                                    if (drop_array.get(drop_array.size() - 1) < -DROP_THRESH) {
-                                                        closeEyes_drop = drop_array.get(drop_array.size() - 1);
-                                                        closeEyes_end = ax.get(ax.size() - 3);
-                                                    }
-                                                    if (drop_array.get(drop_array.size() - 1) > DROP_THRESH) {
-                                                        openEyes_drop = drop_array.get(drop_array.size() - 1);
-                                                        openEyes_start = ax.get(ax.size() - 3 - temp);
-                                                        if (Math.abs(closeEyes_drop + openEyes_drop) < 0.1 && ear_array.get(ear_array.size() - 3 - temp) < 0.21
-                                                                && openEyes_start - closeEyes_end < 20) {
-                                                            closeEyes_drop = -5;
-                                                        }
-                                                    }
-                                                }
-
-                                            }
-
                                             long currentTime = System.currentTimeMillis();
 
                                             if (currentTime - isNoFaceTime > 1000) {
@@ -479,19 +417,13 @@ public class ProcessWithQueue extends Thread {
 
     private void saveBitmap(Bitmap bm, String directory, String fileName) {
         String filePath;
-
         boolean hasSDCard = Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
-
         if (hasSDCard) {
-
             filePath = Environment.getExternalStorageDirectory().toString() + File.separator + directory + File.separator + fileName;
-
         } else
-
             filePath = Environment.getDownloadCacheDirectory().toString() + File.separator + directory + File.separator + fileName;
         try {
             File file = new File(filePath);
-
             if (!file.exists()) {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
@@ -503,7 +435,6 @@ public class ProcessWithQueue extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
 }
