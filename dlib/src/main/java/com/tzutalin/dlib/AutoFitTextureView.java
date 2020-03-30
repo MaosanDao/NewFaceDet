@@ -17,8 +17,12 @@
 package com.tzutalin.dlib;
 
 import android.content.Context;
+import android.graphics.Outline;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.TextureView;
+import android.view.View;
+import android.view.ViewOutlineProvider;
 
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
@@ -26,6 +30,7 @@ import android.view.TextureView;
 public class AutoFitTextureView extends TextureView {
   private int mRatioWidth = 0;
   private int mRatioHeight = 0;
+  private int radius = 0;
 
   public AutoFitTextureView(final Context context) {
     this(context, null);
@@ -33,6 +38,26 @@ public class AutoFitTextureView extends TextureView {
 
   public AutoFitTextureView(final Context context, final AttributeSet attrs) {
     this(context, attrs, 0);
+    setOutlineProvider(new ViewOutlineProvider() {
+      @Override
+      public void getOutline(View view, Outline outline) {
+        Rect rect = new Rect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+        outline.setRoundRect(rect, radius);
+      }
+    });
+    setClipToOutline(true);
+  }
+
+  public void turnRound() {
+    invalidateOutline();
+  }
+
+  public void setRadius(int radius) {
+    this.radius = radius;
+  }
+
+  public int getRadius() {
+    return radius;
   }
 
   public AutoFitTextureView(final Context context, final AttributeSet attrs, final int defStyle) {
