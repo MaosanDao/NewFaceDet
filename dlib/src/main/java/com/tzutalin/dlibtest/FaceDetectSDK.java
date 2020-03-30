@@ -99,7 +99,7 @@ public class FaceDetectSDK {
     /**
      * 视频每一帧的监听
      */
-    private OnGetImageListener mOnGetPreviewListener;
+    private OnGetImageListener mOnGetPreviewListener = new OnGetImageListener();
 
     /**
      * 内部运行的Handler
@@ -187,14 +187,12 @@ public class FaceDetectSDK {
     /**
      * 初始化
      *
-     * @param mOnGetPreviewListener 每一帧的监听
-     * @param context               Context
-     * @param inferenceHandler      每一帧数据处理的Handler
-     * @param backgroundHandler     相机显示Handler
+     * @param context           Context
+     * @param inferenceHandler  每一帧数据处理的Handler
+     * @param backgroundHandler 相机显示Handler
      */
-    public FaceDetectSDK init(OnGetImageListener mOnGetPreviewListener, Context context
+    public FaceDetectSDK init(Context context
             , Handler inferenceHandler, Handler backgroundHandler) {
-        this.mOnGetPreviewListener = mOnGetPreviewListener;
         this.mContext = context;
         this.mHandler = inferenceHandler;
         this.backgroundHandler = backgroundHandler;
@@ -636,7 +634,7 @@ public class FaceDetectSDK {
                     },
                     null);
 
-            mOnGetPreviewListener.initialize(mContext, mHandler,mLastMotions, mListener);
+            mOnGetPreviewListener.initialize(mContext, mHandler, mLastMotions, mListener);
             mListener.onReady();
         } catch (final CameraAccessException e) {
             e.printStackTrace();

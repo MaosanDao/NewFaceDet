@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.tzutalin.dlibtest;
+package com.tzutalin.dlibtest.test;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -43,6 +43,8 @@ import android.widget.Toast;
 import com.tzutalin.dlib.AutoFitTextureView;
 import com.tzutalin.dlib.Constants;
 import com.tzutalin.dlib.FaceDetectListener;
+import com.tzutalin.dlibtest.FaceDetectSDK;
+import com.tzutalin.dlibtest.R;
 
 import java.util.ArrayList;
 
@@ -171,37 +173,6 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
         mCheckHead.setEnabled(false);
         mCheckMouth.setEnabled(false);
         mSetZero.setEnabled(false);
-
-        mCheckEye.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showToast("已切换到眨眼");
-                mHintText.setText("已清零，请再次触发动作");
-                mSum = 0;
-                mOnGetPreviewListener.setMotionType(Constants.MOTION_EYE);
-            }
-        });
-
-        mCheckHead.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showToast("已切换到摇头");
-                mHintText.setText("已清零，请再次触发动作");
-                mSum = 0;
-                mOnGetPreviewListener.setMotionType(Constants.MOTION_HEAD);
-            }
-        });
-
-        mCheckMouth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showToast("已切换到张嘴");
-                mHintText.setText("已清零，请再次触发动作");
-                mSum = 0;
-                mOnGetPreviewListener.setMotionType(Constants.MOTION_MOUTH);
-            }
-        });
-
         mSetZero.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -240,8 +211,7 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
         FaceDetectSDK.with()
                 .setFaceDetectListener(this)
                 .setMotionList(mMotions, true)
-                .init(mOnGetPreviewListener
-                        , getActivity().getApplicationContext()
+                .init(getActivity().getApplicationContext()
                         , inferenceHandler
                         , backgroundHandler);
     }
@@ -294,7 +264,6 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
         }
     }
 
-    private final OnGetImageListener mOnGetPreviewListener = new OnGetImageListener();
 
     @Override
     public void onBitMap(Bitmap bitmap) {
