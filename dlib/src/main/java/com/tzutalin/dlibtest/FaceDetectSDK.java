@@ -574,7 +574,9 @@ public class FaceDetectSDK {
     private void createCameraPreviewSession() {
         try {
             final SurfaceTexture texture = mTextTrueView.getSurfaceTexture();
-//            assert texture != null;
+            if(texture == null){
+                return;
+            }
 
             // 我们将默认缓冲区的大小配置为所需的摄像机预览的大小
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
