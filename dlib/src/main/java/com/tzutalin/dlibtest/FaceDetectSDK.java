@@ -156,6 +156,8 @@ public class FaceDetectSDK {
      */
     private boolean isOnlyEye = false;
 
+    private AutoFitTextureView mTextTrueView;
+
     private FaceDetectSDK() {
     }
 
@@ -192,10 +194,11 @@ public class FaceDetectSDK {
      * @param backgroundHandler 相机显示Handler
      */
     public FaceDetectSDK init(Context context
-            , Handler inferenceHandler, Handler backgroundHandler) {
+            , Handler inferenceHandler, Handler backgroundHandler, AutoFitTextureView textTrueView) {
         this.mContext = context;
         this.mHandler = inferenceHandler;
         this.backgroundHandler = backgroundHandler;
+        this.mTextTrueView = textTrueView;
 
 
         //重置数据
@@ -570,19 +573,19 @@ public class FaceDetectSDK {
 
     private void createCameraPreviewSession() {
         try {
-//            final SurfaceTexture texture = textureView.getSurfaceTexture();
+            final SurfaceTexture texture = mTextTrueView.getSurfaceTexture();
 //            assert texture != null;
 
             // 我们将默认缓冲区的大小配置为所需的摄像机预览的大小
-//            texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
+            texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
             //texture.setOnFrameAvailableListener();
 
             // 这是我们需要开始预览的输出Surface.
-//            final Surface surface = new Surface(texture);
+            final Surface surface = new Surface(texture);
 
             // 我们使用输出Surface设置一个CaptureRequest.Builder
             previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            //previewRequestBuilder.addTarget(surface);
+            previewRequestBuilder.addTarget(surface);
 
             // 设置预览画面的帧率 视实际情况而定选择一个帧率范围
 //            previewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRanges[0]);
@@ -597,8 +600,8 @@ public class FaceDetectSDK {
 
             // 在这里，我们创建了CameraCaptureSession来进行相机预览
             cameraDevice.createCaptureSession(
-                    //Arrays.asList(surface,previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
-                    Collections.singletonList(previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
+                    Arrays.asList(surface, previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
+//                    Collections.singletonList(previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
 
                         @Override
                         public void onConfigured(@NonNull final CameraCaptureSession cameraCaptureSession) {
