@@ -24,11 +24,6 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true" />
 
-    <ImageView
-        android:id="@+id/frameLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
     <TextView
         android:id="@+id/hint_text"
         android:layout_width="match_parent"

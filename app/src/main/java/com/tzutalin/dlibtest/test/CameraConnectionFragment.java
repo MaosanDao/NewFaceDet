@@ -35,6 +35,7 @@ import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -51,7 +52,7 @@ import java.util.ArrayList;
 import hugo.weaving.DebugLog;
 import timber.log.Timber;
 
-public class CameraConnectionFragment extends Fragment implements FaceDetectListener {
+public class CameraConnectionFragment extends Fragment implements FaceDetectListener, ViewTreeObserver.OnGlobalLayoutListener {
 
     private static final String TAG = "CameraConnectionFragment";
 
@@ -161,12 +162,13 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         textureView = view.findViewById(R.id.texture);
-        frameLayout = view.findViewById(R.id.frameLayout);
         mHintText = view.findViewById(R.id.hint_text);
         mCheckEye = view.findViewById(R.id.check_eye);
         mCheckHead = view.findViewById(R.id.check_head);
         mCheckMouth = view.findViewById(R.id.check_mouth);
         mSetZero = view.findViewById(R.id.set_zero);
+
+        textureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
 
         mHintText.setText("正在初始化中，请不要点击");
         mCheckEye.setEnabled(false);
@@ -204,6 +206,9 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
             textureView.setSurfaceTextureListener(surfaceTextureListener);
         }
 
+        textureView.setRadius(300);
+        textureView.turnRound();
+
         mMotions.add(Constants.MOTION_MOUTH);
         mMotions.add(Constants.MOTION_EYE);
         mMotions.add(Constants.MOTION_HEAD);
@@ -213,7 +218,7 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
                 .setMotionList(mMotions, true)
                 .init(getActivity().getApplicationContext()
                         , inferenceHandler
-                        , backgroundHandler);
+                        , backgroundHandler, textureView);
     }
 
     @Override
@@ -283,7 +288,18 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
 
     @Override
     public void onMotionCheckStart(int motion) {
-        Log.w("wangpei", "开始检测：" + motion);
+        switch (motion) {
+            case Constants.MOTION_MOUTH:
+                Log.w("wangpei", "开始检测：张嘴");
+                break;
+            case Constants.MOTION_EYE:
+                Log.w("wangpei", "开始检测：眨眼");
+                break;
+            case Constants.MOTION_HEAD:
+                Log.w("wangpei", "开始检测：摇头");
+                break;
+        }
+
     }
 
     @Override
@@ -309,6 +325,11 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
         this.getActivity().finish();
     }
 
+    @Override
+    public void onGlobalLayout() {
+        textureView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+    }
+
 
     /**
      * Creates a new {@link CameraCaptureSession} for camera preview.
@@ -321,7 +342,6 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
                 case 1:
                     Bitmap bitmap = (Bitmap) msg.obj;
 
-                    frameLayout.setImageBitmap(bitmap);
                     break;
                 case 2:
                     mSum++;
