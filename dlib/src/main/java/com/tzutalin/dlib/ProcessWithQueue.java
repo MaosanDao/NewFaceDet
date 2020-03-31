@@ -10,6 +10,7 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Environment;
 import android.os.Handler;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -148,7 +149,6 @@ public class ProcessWithQueue extends Thread {
                                     detectingIndex = 0;
                                     mInferenceHandler.removeCallbacks(this);
                                     faceDetectListener.onComplete();
-                                    return;
                                 }
                             }
 
@@ -259,6 +259,7 @@ public class ProcessWithQueue extends Thread {
                                                     if (!isCheckedEye) {
                                                         isCheckedEye = true;
                                                         detectingIndex++;
+                                                        Log.w("FaceDetectSDK","MOTION_EYE");
                                                         faceDetectListener.onActionMotion(Constants.MOTION_EYE);
                                                     }
                                                 }
@@ -332,6 +333,7 @@ public class ProcessWithQueue extends Thread {
                                                 if (!isCheckedHead) {
                                                     isCheckedHead = true;
                                                     detectingIndex++;
+                                                    Log.w("FaceDetectSDK","MOTION_HEAD");
                                                     faceDetectListener.onActionMotion(Constants.MOTION_HEAD);
                                                 }
                                             }
@@ -388,6 +390,7 @@ public class ProcessWithQueue extends Thread {
                                                         if (!isCheckedMouth) {
                                                             isCheckedMouth = true;
                                                             detectingIndex++;
+                                                            Log.w("FaceDetectSDK","MOTION_MOUTH");
                                                             faceDetectListener.onActionMotion(Constants.MOTION_MOUTH);
                                                         }
                                                     }
@@ -404,6 +407,7 @@ public class ProcessWithQueue extends Thread {
                                     faceDetectListener.onBitMap(framefordisplay);
                                 }
                                 break;
+                                default:
                             }
                         }
                     });

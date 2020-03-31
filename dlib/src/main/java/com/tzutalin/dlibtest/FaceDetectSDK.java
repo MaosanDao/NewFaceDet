@@ -56,7 +56,7 @@ public class FaceDetectSDK {
      * The camera preview size will be chosen to be the smallest frame by pixel size capable of
      * containing a DESIRED_SIZE x DESIRED_SIZE square.
      */
-    private static final int MINIMUM_PREVIEW_SIZE = 320;
+    private int mMinPreSize = 320;
 
 
     private Size mPreviewSize;
@@ -72,7 +72,7 @@ public class FaceDetectSDK {
     private CameraDevice cameraDevice;
 
     /**
-     * {@link android.hardware.camera2.CaptureRequest.Builder} for the camera preview
+     * {@link CaptureRequest.Builder} for the camera preview
      */
     private CaptureRequest.Builder previewRequestBuilder;
 
@@ -199,7 +199,6 @@ public class FaceDetectSDK {
         this.mHandler = inferenceHandler;
         this.backgroundHandler = backgroundHandler;
         this.mTextTrueView = textTrueView;
-
 
         //重置数据
         resetMotionsList();
@@ -334,13 +333,14 @@ public class FaceDetectSDK {
         // Collect the supported resolutions that are at least as big as the preview Surface
         final List<Size> bigEnough = new ArrayList<>();
         for (final Size option : choices) {
-            if (option.getHeight() >= MINIMUM_PREVIEW_SIZE && option.getWidth() >= MINIMUM_PREVIEW_SIZE) {
+            if (option.getHeight() >= mMinPreSize && option.getWidth() >= mMinPreSize) {
                 Log.i("FaceDetectSDK", "Adding size: " + option.getWidth() + "x" + option.getHeight());
                 bigEnough.add(option);
             } else {
                 Log.i("FaceDetectSDK", "Not adding size: " + option.getWidth() + "x" + option.getHeight());
             }
         }
+
 
         // Pick the smallest of those, assuming we found any
         if (bigEnough.size() > 0) {
@@ -474,7 +474,7 @@ public class FaceDetectSDK {
 
 
     /**
-     * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
+     * Configures the necessary {@link Matrix} transformation to `mTextureView`.
      * This method should be called after the camera preview size is determined in
      * setUpCameraOutputs and also the size of `mTextureView` is fixed.
      *
@@ -574,9 +574,6 @@ public class FaceDetectSDK {
     private void createCameraPreviewSession() {
         try {
             final SurfaceTexture texture = mTextTrueView.getSurfaceTexture();
-            if(texture == null){
-                return;
-            }
 
             // 我们将默认缓冲区的大小配置为所需的摄像机预览的大小
             texture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
@@ -603,8 +600,6 @@ public class FaceDetectSDK {
             // 在这里，我们创建了CameraCaptureSession来进行相机预览
             cameraDevice.createCaptureSession(
                     Arrays.asList(surface, previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
-//                    Collections.singletonList(previewReader.getSurface()), new CameraCaptureSession.StateCallback() {
-
                         @Override
                         public void onConfigured(@NonNull final CameraCaptureSession cameraCaptureSession) {
                             // 相机已经关闭
@@ -626,7 +621,7 @@ public class FaceDetectSDK {
                                 // 最后，我们开始显示摄像机预览。
                                 previewRequest = previewRequestBuilder.build();
                                 captureSession.setRepeatingRequest(
-                                        previewRequest, FaceDetectSDK.with().getCaptureCallback(), backgroundHandler);
+                                        previewRequest, getCaptureCallback(), backgroundHandler);
                             } catch (final CameraAccessException e) {
                                 e.printStackTrace();
                             }
