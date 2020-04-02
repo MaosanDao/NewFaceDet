@@ -2,18 +2,11 @@ package com.tzutalin.dlib;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,7 +29,6 @@ public class ProcessWithQueue extends Thread {
     private Context mContext;
     private FaceDet mFaceDet;
     private FaceDetectListener faceDetectListener;
-    private Paint mFaceLandmardkPaint;
     private double ear = 0;
     private int x = 0;
     private boolean ear_array_removed = false;
@@ -100,12 +92,6 @@ public class ProcessWithQueue extends Thread {
         frameForDisplay = frameQueueForDisplay;
         mFaceDet = new FaceDet(Constants.getFaceShapeModelPath());
 
-        mFaceLandmardkPaint = new Paint();
-        mFaceLandmardkPaint.setColor(Color.RED);
-        mFaceLandmardkPaint.setStrokeWidth(2);
-        mFaceLandmardkPaint.setAntiAlias(true);
-        mFaceLandmardkPaint.setStyle(Paint.Style.STROKE);
-
         start();
     }
 
@@ -143,7 +129,7 @@ public class ProcessWithQueue extends Thread {
                     new Runnable() {
                         @Override
                         public void run() {
-
+                            Log.w("FaceDetectSDK", "mInferenceHandler");
                             if (mLastMotions.size() > 0) {
                                 if (detectingIndex == mLastMotions.size()) {
                                     detectingIndex = 0;
@@ -173,10 +159,6 @@ public class ProcessWithQueue extends Thread {
                                     if (results.size() != 0) {
                                         for (final VisionDetRet ret : results) {
                                             float resizeRatio = 4f;
-                                            Canvas canvas = new Canvas(framefordisplay);
-                                            canvas.setDrawFilter(new PaintFlagsDrawFilter(0
-                                                    , Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
-
                                             ArrayList<Point> landmarks = ret.getFaceLandmarks();
 
                                             int i = 1;
@@ -199,9 +181,6 @@ public class ProcessWithQueue extends Thread {
                                                 }
                                                 i++;
                                             }
-
-                                            canvas.drawPath(getPath(leftEye), mFaceLandmardkPaint);
-                                            canvas.drawPath(getPath(rightEye), mFaceLandmardkPaint);
 
                                             double leftEAR = eye_aspect_ratio(leftEye);
                                             double rightEAR = eye_aspect_ratio(rightEye);
@@ -259,7 +238,7 @@ public class ProcessWithQueue extends Thread {
                                                     if (!isCheckedEye) {
                                                         isCheckedEye = true;
                                                         detectingIndex++;
-                                                        Log.w("FaceDetectSDK","MOTION_EYE");
+                                                        Log.e("FaceDetectSDK", "MOTION_EYE");
                                                         faceDetectListener.onActionMotion(Constants.MOTION_EYE);
                                                     }
                                                 }
@@ -286,17 +265,7 @@ public class ProcessWithQueue extends Thread {
                                     if (results.size() != 0) {
                                         for (final VisionDetRet ret : results) {
                                             float resizeRatio = 4f;
-                                            Canvas canvas = new Canvas(framefordisplay);
-                                            canvas.setDrawFilter(new PaintFlagsDrawFilter(0
-                                                    , Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
                                             ArrayList<Point> landmarks = ret.getFaceLandmarks();
-
-
-                                            for (Point point : landmarks) {
-                                                int pointX = (int) (point.x * resizeRatio);
-                                                int pointY = (int) (point.y * resizeRatio);
-                                                canvas.drawCircle(pointX, pointY, 2, mFaceLandmardkPaint);
-                                            }
 
                                             keyPoint_left = landmarks.get(2);
                                             keyPoint_right = landmarks.get(14);
@@ -333,7 +302,7 @@ public class ProcessWithQueue extends Thread {
                                                 if (!isCheckedHead) {
                                                     isCheckedHead = true;
                                                     detectingIndex++;
-                                                    Log.w("FaceDetectSDK","MOTION_HEAD");
+                                                    Log.e("FaceDetectSDK", "MOTION_HEAD");
                                                     faceDetectListener.onActionMotion(Constants.MOTION_HEAD);
                                                 }
                                             }
@@ -358,8 +327,6 @@ public class ProcessWithQueue extends Thread {
                                     if (results.size() != 0) {
                                         for (final VisionDetRet ret : results) {
                                             float resizeRatio = 4f;
-                                            Canvas canvas = new Canvas(framefordisplay);
-                                            canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
                                             ArrayList<Point> landmarks = ret.getFaceLandmarks();
 
                                             int i = 1;
@@ -378,8 +345,6 @@ public class ProcessWithQueue extends Thread {
                                                 i++;
                                             }
 
-                                            canvas.drawPath(getPath(leftEye), mFaceLandmardkPaint);
-
                                             double leftEAR = mouth_aspect_ratio(leftEye);
                                             long currentTime = System.currentTimeMillis();
 
@@ -390,7 +355,7 @@ public class ProcessWithQueue extends Thread {
                                                         if (!isCheckedMouth) {
                                                             isCheckedMouth = true;
                                                             detectingIndex++;
-                                                            Log.w("FaceDetectSDK","MOTION_MOUTH");
+                                                            Log.e("FaceDetectSDK", "MOTION_MOUTH");
                                                             faceDetectListener.onActionMotion(Constants.MOTION_MOUTH);
                                                         }
                                                     }
@@ -466,27 +431,4 @@ public class ProcessWithQueue extends Thread {
         path.close();
         return path;
     }
-
-    private void saveBitmap(Bitmap bm, String directory, String fileName) {
-        String filePath;
-        boolean hasSDCard = Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
-        if (hasSDCard) {
-            filePath = Environment.getExternalStorageDirectory().toString() + File.separator + directory + File.separator + fileName;
-        } else
-            filePath = Environment.getDownloadCacheDirectory().toString() + File.separator + directory + File.separator + fileName;
-        try {
-            File file = new File(filePath);
-            if (!file.exists()) {
-                file.getParentFile().mkdirs();
-                file.createNewFile();
-            }
-            FileOutputStream fos = new FileOutputStream(file);
-            bm.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-            fos.flush();
-            fos.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 }
