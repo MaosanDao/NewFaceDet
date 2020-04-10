@@ -137,7 +137,6 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
         mMyHandler = new MyHanlder();
     }
 
@@ -172,9 +171,8 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     @Override
     public void onDestroy() {
         super.onDestroy();
-        FaceDetectSDK.with().destroy();
+        FaceDetectSDK.with().onDestroy();
     }
-
 
     @Override
     public void onBitMap(Bitmap bitmap) {

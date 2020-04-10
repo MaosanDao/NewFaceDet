@@ -187,7 +187,7 @@ public class FaceDetectSDK {
         return faceSDK;
     }
 
-    public void destroy() {
+    public void onDestroy() {
         mContext = null;
     }
 
@@ -208,18 +208,18 @@ public class FaceDetectSDK {
     /**
      * 初始化
      *
-     * @param context Context
+     * @param activity Context
      */
-    public FaceDetectSDK init(Activity context
+    public FaceDetectSDK init(Activity activity
             , AutoFitTextureView textTrueView) {
 
         if (textTrueView.isAvailable()) {
-            FaceDetectSDK.with().openCamera(textTrueView, context, textTrueView.getWidth(), textTrueView.getHeight());
+            FaceDetectSDK.with().openCamera(textTrueView, activity, textTrueView.getWidth(), textTrueView.getHeight());
         } else {
             textTrueView.setSurfaceTextureListener(surfaceTextureListener);
         }
 
-        this.mContext = context;
+        this.mContext = activity;
         this.mTextTrueView = textTrueView;
 
         //重置数据
