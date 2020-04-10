@@ -21,12 +21,14 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Surface;
+import android.view.TextureView;
 
 import com.tzutalin.dlib.AutoFitTextureView;
 import com.tzutalin.dlib.Constants;
@@ -40,6 +42,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import hugo.weaving.DebugLog;
 
 /**
  * Function: Face Out SDK Class
@@ -102,14 +106,9 @@ public class FaceDetectSDK {
     private OnGetImageListener mOnGetPreviewListener = new OnGetImageListener();
 
     /**
-     * 内部运行的Handler
-     */
-    private Handler mHandler;
-
-    /**
      * Context
      */
-    private Context mContext;
+    private Activity mContext;
 
     /**
      * 检测回调
@@ -158,6 +157,22 @@ public class FaceDetectSDK {
 
     private AutoFitTextureView mTextTrueView;
 
+
+    /**
+     * 用于运行不应阻塞UI的任务的附加线程。
+     */
+    private HandlerThread backgroundThread;
+
+    /**
+     * 用于运行推理的附加线程，以免阻塞相机。
+     */
+    private HandlerThread inferenceThread;
+
+    /**
+     * A {@link Handler} for running tasks in the background.
+     */
+    private Handler inferenceHandler;
+
     private FaceDetectSDK() {
     }
 
@@ -176,6 +191,10 @@ public class FaceDetectSDK {
         mContext = null;
     }
 
+    public void onStart() {
+        startBackgroundThread();
+    }
+
     /**
      * 重置数据
      */
@@ -189,15 +208,18 @@ public class FaceDetectSDK {
     /**
      * 初始化
      *
-     * @param context           Context
-     * @param inferenceHandler  每一帧数据处理的Handler
-     * @param backgroundHandler 相机显示Handler
+     * @param context Context
      */
-    public FaceDetectSDK init(Context context
-            , Handler inferenceHandler, Handler backgroundHandler, AutoFitTextureView textTrueView) {
+    public FaceDetectSDK init(Activity context
+            , AutoFitTextureView textTrueView) {
+
+        if (textTrueView.isAvailable()) {
+            FaceDetectSDK.with().openCamera(textTrueView, context, textTrueView.getWidth(), textTrueView.getHeight());
+        } else {
+            textTrueView.setSurfaceTextureListener(surfaceTextureListener);
+        }
+
         this.mContext = context;
-        this.mHandler = inferenceHandler;
-        this.backgroundHandler = backgroundHandler;
         this.mTextTrueView = textTrueView;
 
         //重置数据
@@ -213,6 +235,42 @@ public class FaceDetectSDK {
         resetMotionsList();
 
         return this;
+    }
+
+
+    /**
+     * Starts a background thread and its {@link Handler}.
+     */
+    @DebugLog
+    private void startBackgroundThread() {
+        backgroundThread = new HandlerThread("ImageListener");
+        backgroundThread.start();
+        backgroundHandler = new Handler(backgroundThread.getLooper());
+
+        inferenceThread = new HandlerThread("InferenceThread");
+        inferenceThread.start();
+        inferenceHandler = new Handler(inferenceThread.getLooper());
+    }
+
+    /**
+     * Stops the background thread and its {@link Handler}.
+     */
+    @SuppressLint("LongLogTag")
+    @DebugLog
+    private void stopBackgroundThread() {
+        backgroundThread.quitSafely();
+        inferenceThread.quitSafely();
+        try {
+            backgroundThread.join();
+            backgroundThread = null;
+            backgroundHandler = null;
+
+            inferenceThread.join();
+            inferenceThread = null;
+            inferenceHandler = null;
+        } catch (final InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -447,7 +505,9 @@ public class FaceDetectSDK {
 
     }
 
-    public void closeCamera() {
+    public void onPause() {
+        stopBackgroundThread();
+
         try {
             cameraOpenCloseLock.acquire();
             if (null != captureSession) {
@@ -634,10 +694,39 @@ public class FaceDetectSDK {
                     },
                     null);
 
-            mOnGetPreviewListener.initialize(mContext, mHandler, mLastMotions, mListener);
+            mOnGetPreviewListener.initialize(mContext, inferenceHandler, mLastMotions, mListener);
             mListener.onReady();
         } catch (final CameraAccessException e) {
             e.printStackTrace();
         }
     }
+
+
+    /**
+     * {@link android.view.TextureView.SurfaceTextureListener} handles several lifecycle events on a
+     * {@link TextureView}.
+     */
+    private final TextureView.SurfaceTextureListener surfaceTextureListener =
+            new TextureView.SurfaceTextureListener() {
+                @Override
+                public void onSurfaceTextureAvailable(
+                        final SurfaceTexture texture, final int width, final int height) {
+                    openCamera(mTextTrueView, mContext, width, height);
+                }
+
+                @Override
+                public void onSurfaceTextureSizeChanged(
+                        final SurfaceTexture texture, final int width, final int height) {
+                    configureTransform(mContext, mTextTrueView, width, height);
+                }
+
+                @Override
+                public boolean onSurfaceTextureDestroyed(final SurfaceTexture texture) {
+                    return true;
+                }
+
+                @Override
+                public void onSurfaceTextureUpdated(final SurfaceTexture texture) {
+                }
+            };
 }

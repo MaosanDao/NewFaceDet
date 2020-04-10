@@ -16,7 +16,6 @@
 
 package com.tzutalin.dlibtest.test;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -24,15 +23,12 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCaptureSession;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -49,9 +45,6 @@ import com.tzutalin.dlibtest.R;
 
 import java.util.ArrayList;
 
-import hugo.weaving.DebugLog;
-import timber.log.Timber;
-
 public class CameraConnectionFragment extends Fragment implements FaceDetectListener, ViewTreeObserver.OnGlobalLayoutListener {
 
     private static final String TAG = "CameraConnectionFragment";
@@ -64,59 +57,10 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     private MyHanlder mMyHandler;
 
     /**
-     * {@link android.view.TextureView.SurfaceTextureListener} handles several lifecycle events on a
-     * {@link TextureView}.
-     */
-    private final TextureView.SurfaceTextureListener surfaceTextureListener =
-            new TextureView.SurfaceTextureListener() {
-                @Override
-                public void onSurfaceTextureAvailable(
-                        final SurfaceTexture texture, final int width, final int height) {
-                    FaceDetectSDK.with().openCamera(textureView, getActivity(), width, height);
-                }
-
-                @Override
-                public void onSurfaceTextureSizeChanged(
-                        final SurfaceTexture texture, final int width, final int height) {
-                    FaceDetectSDK.with().configureTransform(getActivity(), textureView, width, height);
-                }
-
-                @Override
-                public boolean onSurfaceTextureDestroyed(final SurfaceTexture texture) {
-                    return true;
-                }
-
-                @Override
-                public void onSurfaceTextureUpdated(final SurfaceTexture texture) {
-                }
-            };
-
-    /**
      * An {@link AutoFitTextureView} for camera preview.
      */
     private AutoFitTextureView textureView;
     private ImageView frameLayout;
-
-    /**
-     * 用于运行不应阻塞UI的任务的附加线程。
-     */
-    private HandlerThread backgroundThread;
-
-    /**
-     * 用于在后台运行任务。
-     */
-    private Handler backgroundHandler;
-
-    /**
-     * 用于运行推理的附加线程，以免阻塞相机。
-     */
-    private HandlerThread inferenceThread;
-
-    /**
-     * A {@link Handler} for running tasks in the background.
-     */
-    private Handler inferenceHandler;
-
 
     /**
      * Shows a {@link Toast} on the UI thread.
@@ -185,6 +129,12 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        FaceDetectSDK.with().onStart();
+    }
+
+    @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
@@ -194,17 +144,11 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     @Override
     public void onResume() {
         super.onResume();
-        startBackgroundThread();
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
-        if (textureView.isAvailable()) {
-            FaceDetectSDK.with().openCamera(textureView, getActivity(), textureView.getWidth(), textureView.getHeight());
-        } else {
-            textureView.setSurfaceTextureListener(surfaceTextureListener);
-        }
 
         textureView.setRadius(300);
         textureView.turnRound();
@@ -216,15 +160,12 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
         FaceDetectSDK.with()
                 .setFaceDetectListener(this)
                 .setMotionList(mMotions, true)
-                .init(getActivity().getApplicationContext()
-                        , inferenceHandler
-                        , backgroundHandler, textureView);
+                .init(getActivity(), textureView);
     }
 
     @Override
     public void onPause() {
-        FaceDetectSDK.with().closeCamera();
-        stopBackgroundThread();
+        FaceDetectSDK.with().onPause();
         super.onPause();
     }
 
@@ -232,41 +173,6 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     public void onDestroy() {
         super.onDestroy();
         FaceDetectSDK.with().destroy();
-    }
-
-    /**
-     * Starts a background thread and its {@link Handler}.
-     */
-    @DebugLog
-    private void startBackgroundThread() {
-        backgroundThread = new HandlerThread("ImageListener");
-        backgroundThread.start();
-        backgroundHandler = new Handler(backgroundThread.getLooper());
-
-        inferenceThread = new HandlerThread("InferenceThread");
-        inferenceThread.start();
-        inferenceHandler = new Handler(inferenceThread.getLooper());
-    }
-
-    /**
-     * Stops the background thread and its {@link Handler}.
-     */
-    @SuppressLint("LongLogTag")
-    @DebugLog
-    private void stopBackgroundThread() {
-        backgroundThread.quitSafely();
-        inferenceThread.quitSafely();
-        try {
-            backgroundThread.join();
-            backgroundThread = null;
-            backgroundHandler = null;
-
-            inferenceThread.join();
-            inferenceThread = null;
-            inferenceHandler = null;
-        } catch (final InterruptedException e) {
-            Timber.tag(TAG).e("error", e);
-        }
     }
 
 
