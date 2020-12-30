@@ -124,7 +124,7 @@ public class ProcessWithQueue extends Thread {
     }
 
     private void processFrame(final Bitmap frameData, final Bitmap framefordisplay) {
-        if (frameData != null) {
+        if (frameData != null && mInferenceHandler != null) {
             mInferenceHandler.post(
                     new Runnable() {
                         @Override
