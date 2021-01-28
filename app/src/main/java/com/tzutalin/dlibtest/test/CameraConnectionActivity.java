@@ -27,10 +27,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
-import android.util.Log;
-import android.view.View;
 import android.view.ViewTreeObserver;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -79,11 +76,6 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
     private TextView mHintText;
     private int mSum = 0;
 
-    private Button mCheckEye;
-    private Button mCheckMouth;
-    private Button mCheckHead;
-    private Button mSetZero;
-
     /**
      * 正在检测的顺序
      */
@@ -93,7 +85,6 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
         return new CameraConnectionActivity();
     }
 
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,26 +92,9 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
 
         textureView = findViewById(R.id.texture);
         mHintText = findViewById(R.id.hint_text);
-        mCheckEye = findViewById(R.id.check_eye);
-        mCheckHead = findViewById(R.id.check_head);
-        mCheckMouth = findViewById(R.id.check_mouth);
-        mSetZero = findViewById(R.id.set_zero);
 
         textureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
-
         mHintText.setText("正在初始化中，请不要点击");
-        mCheckEye.setEnabled(false);
-        mCheckHead.setEnabled(false);
-        mCheckMouth.setEnabled(false);
-        mSetZero.setEnabled(false);
-        mSetZero.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mHintText.setText("已清零，请再次触发动作");
-                mSum = 0;
-            }
-        });
-
         mMyHandler = new MyHanlder();
     }
 
@@ -133,8 +107,6 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
     @Override
     public void onResume() {
         super.onResume();
-        textureView.setRadius(300);
-        textureView.turnRound();
 
         mMotions.add(Constants.MOTION_MOUTH);
         mMotions.add(Constants.MOTION_EYE);
@@ -167,54 +139,31 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
     }
 
     @Override
-    public void onActionMotion(int motion) {
-        Message message = Message.obtain();
-        message.what = 2;
-        message.obj = motion;
-        mMyHandler.sendMessage(message);
-    }
-
-    @Override
-    public void onMotionCheckStart(int motion) {
-        switch (motion) {
-            case Constants.MOTION_MOUTH:
-                Log.w("wangpei", "开始检测：张嘴");
-                break;
-            case Constants.MOTION_EYE:
-                Log.w("wangpei", "开始检测：眨眼");
-                break;
-            case Constants.MOTION_HEAD:
-                Log.w("wangpei", "开始检测：摇头");
-                break;
-        }
-
-    }
-
-    @Override
     public void onReady() {
         runOnUiThread(
                 new Runnable() {
                     @Override
                     public void run() {
-                        mHintText.setText("已初始化完毕，请选择底部的检测类型");
-                        mCheckEye.setEnabled(true);
-                        mCheckHead.setEnabled(true);
-                        mCheckMouth.setEnabled(true);
-                        mSetZero.setEnabled(true);
+                        mHintText.setText("已初始化完毕");
                     }
                 });
     }
 
     @Override
-    public void onComplete() {
-        finish();
+    public void onFaceDetected() {
+        runOnUiThread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        mHintText.setText("已识别到人脸");
+                    }
+                });
     }
 
     @Override
     public void onGlobalLayout() {
         textureView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
     }
-
 
     /**
      * Creates a new {@link CameraCaptureSession} for camera preview.
@@ -223,28 +172,8 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-            switch (msg.what) {
-                case 1:
-                    Bitmap bitmap = (Bitmap) msg.obj;
-
-                    break;
-                case 2:
-                    mSum++;
-                    int motion = (int) msg.obj;
-                    switch (motion) {
-                        case Constants.MOTION_EYE:
-                            mHintText.setText("眨眼次数：" + mSum);
-                            break;
-                        case Constants.MOTION_MOUTH:
-                            mHintText.setText("张嘴次数：" + mSum);
-                            break;
-                        case Constants.MOTION_HEAD:
-                            mHintText.setText("摇头次数：" + mSum);
-                            break;
-                    }
-
-                    break;
-                default:
+            if (msg.what == 1) {
+                Bitmap bitmap = (Bitmap) msg.obj;
             }
         }
     }
