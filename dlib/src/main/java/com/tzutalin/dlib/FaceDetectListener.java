@@ -17,16 +17,7 @@ public interface FaceDetectListener {
      */
     void onBitMap(Bitmap bitmap);
 
-    /**
-     * Resulting Action
-     *
-     * @param motion motion
-     */
-    void onActionMotion(int motion);
-
-    void onMotionCheckStart(int motion);
-
     void onReady();
 
-    void onComplete();
+    void onFaceDetected();
 }
