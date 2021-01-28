@@ -20,17 +20,15 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.app.Fragment;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.hardware.camera2.CameraCaptureSession;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -45,7 +43,7 @@ import com.tzutalin.dlibtest.R;
 
 import java.util.ArrayList;
 
-public class CameraConnectionFragment extends Fragment implements FaceDetectListener, ViewTreeObserver.OnGlobalLayoutListener {
+public class CameraConnectionActivity extends Activity implements FaceDetectListener, ViewTreeObserver.OnGlobalLayoutListener {
 
     private static final String TAG = "CameraConnectionFragment";
 
@@ -68,16 +66,14 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
      * @param text The message to show
      */
     private void showToast(final String text) {
-        final Activity activity = getActivity();
-        if (activity != null) {
-            activity.runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(activity, text, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-        }
+        runOnUiThread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(CameraConnectionActivity.this, text, Toast.LENGTH_SHORT).show();
+                    }
+                });
+
     }
 
     private TextView mHintText;
@@ -93,24 +89,22 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
      */
     private ArrayList<Integer> mMotions = new ArrayList<>(3);
 
-    public static CameraConnectionFragment newInstance() {
-        return new CameraConnectionFragment();
+    public static CameraConnectionActivity newInstance() {
+        return new CameraConnectionActivity();
     }
 
-    @Override
-    public View onCreateView(
-            final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.camera_connection_fragment, container, false);
-    }
 
     @Override
-    public void onViewCreated(final View view, final Bundle savedInstanceState) {
-        textureView = view.findViewById(R.id.texture);
-        mHintText = view.findViewById(R.id.hint_text);
-        mCheckEye = view.findViewById(R.id.check_eye);
-        mCheckHead = view.findViewById(R.id.check_head);
-        mCheckMouth = view.findViewById(R.id.check_mouth);
-        mSetZero = view.findViewById(R.id.set_zero);
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.camera_connection_fragment);
+
+        textureView = findViewById(R.id.texture);
+        mHintText = findViewById(R.id.hint_text);
+        mCheckEye = findViewById(R.id.check_eye);
+        mCheckHead = findViewById(R.id.check_head);
+        mCheckMouth = findViewById(R.id.check_mouth);
+        mSetZero = findViewById(R.id.set_zero);
 
         textureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
 
@@ -126,6 +120,8 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
                 mSum = 0;
             }
         });
+
+        mMyHandler = new MyHanlder();
     }
 
     @Override
@@ -135,20 +131,8 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
     }
 
     @Override
-    public void onActivityCreated(final Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        mMyHandler = new MyHanlder();
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
-
-        // When the screen is turned off and turned back on, the SurfaceTexture is already
-        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surface is ready in
-        // the SurfaceTextureListener).
-
         textureView.setRadius(300);
         textureView.turnRound();
 
@@ -159,7 +143,7 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
         FaceDetectSDK.with()
                 .setFaceDetectListener(this)
                 .setMotionList(mMotions, true)
-                .init(getActivity(), textureView);
+                .init(this, textureView);
     }
 
     @Override
@@ -208,25 +192,22 @@ public class CameraConnectionFragment extends Fragment implements FaceDetectList
 
     @Override
     public void onReady() {
-        final Activity activity = getActivity();
-        if (activity != null) {
-            activity.runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            mHintText.setText("已初始化完毕，请选择底部的检测类型");
-                            mCheckEye.setEnabled(true);
-                            mCheckHead.setEnabled(true);
-                            mCheckMouth.setEnabled(true);
-                            mSetZero.setEnabled(true);
-                        }
-                    });
-        }
+        runOnUiThread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        mHintText.setText("已初始化完毕，请选择底部的检测类型");
+                        mCheckEye.setEnabled(true);
+                        mCheckHead.setEnabled(true);
+                        mCheckMouth.setEnabled(true);
+                        mSetZero.setEnabled(true);
+                    }
+                });
     }
 
     @Override
     public void onComplete() {
-        this.getActivity().finish();
+        finish();
     }
 
     @Override
