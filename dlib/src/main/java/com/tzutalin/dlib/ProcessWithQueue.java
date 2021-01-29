@@ -5,7 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Handler;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,33 +136,35 @@ public class ProcessWithQueue extends Thread {
 
     private void processFrame(final Bitmap frameData, final Bitmap framefordisplay) {
         if (System.currentTimeMillis() - mRecordTime > MAX_INTERVAL) {
-            mRecordTime = System.currentTimeMillis();
-            if (frameData != null && mInferenceHandler != null) {
-                Runnable face = new Runnable() {
-                    @Override
-                    public void run() {
-                        results = mFaceDet.detect(frameData);
-                        if (results == null) {
-                            return;
-                        }
-                        if (results.size() != 0) {
-                            for (final VisionDetRet ret : results) {
-                                float resizeRatio = 4f;
-                                ArrayList<Point> landmarks = ret.getFaceLandmarks();
+            try {
+                mRecordTime = System.currentTimeMillis();
+                if (frameData != null && mInferenceHandler != null) {
+                    Runnable face = new Runnable() {
+                        @Override
+                        public void run() {
+                            results = mFaceDet.detect(frameData);
+                            if (results == null) {
+                                return;
                             }
+                            if (results.size() != 0) {
+                                for (final VisionDetRet ret : results) {
+                                    float resizeRatio = 4f;
+                                    ArrayList<Point> landmarks = ret.getFaceLandmarks();
+                                }
 
-                            if (detectingIndex < maxDetectTimes) {
-                                mBitMaps.add(framefordisplay);
-                                detectingIndex++;
-                            } else {
-                                faceDetectListener.onFaceDetected(mBitMaps);
+                                if (detectingIndex < maxDetectTimes) {
+                                    mBitMaps.add(framefordisplay);
+                                    detectingIndex++;
+                                } else {
+                                    faceDetectListener.onFaceDetected(mBitMaps);
+                                }
                             }
                         }
-                    }
-                };
-
-
-                mInferenceHandler.post(face);
+                    };
+                    mInferenceHandler.post(face);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
