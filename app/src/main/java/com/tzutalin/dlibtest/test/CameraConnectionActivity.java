@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.hardware.camera2.CameraCaptureSession;
@@ -27,18 +28,23 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.tzutalin.dlib.AutoFitTextureView;
-import com.tzutalin.dlib.Constants;
 import com.tzutalin.dlib.FaceDetectListener;
 import com.tzutalin.dlibtest.FaceDetectSDK;
 import com.tzutalin.dlibtest.R;
 
-import java.util.ArrayList;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
+
+import timber.log.Timber;
 
 public class CameraConnectionActivity extends Activity implements FaceDetectListener, ViewTreeObserver.OnGlobalLayoutListener {
 
@@ -76,11 +82,6 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
     private TextView mHintText;
     private int mSum = 0;
 
-    /**
-     * 正在检测的顺序
-     */
-    private ArrayList<Integer> mMotions = new ArrayList<>(3);
-
     public static CameraConnectionActivity newInstance() {
         return new CameraConnectionActivity();
     }
@@ -108,13 +109,8 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
     public void onResume() {
         super.onResume();
 
-        mMotions.add(Constants.MOTION_MOUTH);
-        mMotions.add(Constants.MOTION_EYE);
-        mMotions.add(Constants.MOTION_HEAD);
-
         FaceDetectSDK.with()
                 .setFaceDetectListener(this)
-                .setMotionList(mMotions, true)
                 .init(this, textureView);
     }
 
@@ -131,15 +127,11 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
     }
 
     @Override
-    public void onBitMap(Bitmap bitmap) {
-        Message message = Message.obtain();
-        message.what = 1;
-        message.obj = bitmap;
-        mMyHandler.sendMessage(message);
-    }
-
-    @Override
     public void onReady() {
+        FaceDetectSDK.with()
+                .setDetectMaxInterval(2000)
+                .setDetectTimes(1);
+
         runOnUiThread(
                 new Runnable() {
                     @Override
@@ -150,14 +142,58 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
     }
 
     @Override
-    public void onFaceDetected() {
+    public void onFaceDetected(List<Bitmap> bitmaps) {
+        Log.d("wangpei", "已识别到人脸");
+
+        for (int i = 0; i < bitmaps.size(); i++) {
+            saveBitmap("bitmap" + i, bitmaps.get(i), this);
+        }
+
         runOnUiThread(
                 new Runnable() {
                     @Override
                     public void run() {
                         mHintText.setText("已识别到人脸");
+                        finish();
                     }
                 });
+    }
+
+    private void saveBitmap(String name, Bitmap bm, Context mContext) {
+        Log.d("Save Bitmap", "Ready to save picture");
+        //指定我们想要存储文件的地址
+        String TargetPath = mContext.getExternalCacheDir() + "/images/";
+        Log.d("Save Bitmap", "Save Path=" + TargetPath);
+        //判断指定文件夹的路径是否存在
+        if (!fileIsExist(TargetPath)) {
+            Log.d("Save Bitmap", "TargetPath isn't exist");
+        } else {
+            //如果指定文件夹创建成功，那么我们则需要进行图片存储操作
+            File saveFile = new File(TargetPath, name + ".png");
+
+            try {
+                FileOutputStream saveImgOut = new FileOutputStream(saveFile);
+                // compress - 压缩的意思
+                bm.compress(Bitmap.CompressFormat.JPEG, 80, saveImgOut);
+                //存储完成后需要清除相关的进程
+                saveImgOut.flush();
+                saveImgOut.close();
+                Log.d("Save Bitmap", "The picture is save to your phone!");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private boolean fileIsExist(String fileName) {
+        //传入指定的路径，然后判断路径是否存在
+        File file = new File(fileName);
+        if (file.exists())
+            return true;
+        else {
+            //file.mkdirs() 创建文件夹的意思
+            return file.mkdirs();
+        }
     }
 
     @Override
@@ -174,6 +210,7 @@ public class CameraConnectionActivity extends Activity implements FaceDetectList
             super.handleMessage(msg);
             if (msg.what == 1) {
                 Bitmap bitmap = (Bitmap) msg.obj;
+                Timber.tag("wangpei").d("bitmap:" + bitmap.getRowBytes());
             }
         }
     }
