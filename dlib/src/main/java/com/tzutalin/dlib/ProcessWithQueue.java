@@ -153,7 +153,6 @@ public class ProcessWithQueue extends Thread {
                             }
 
                             if (detectingIndex < maxDetectTimes) {
-                                Log.d("wangpei", "take:" + detectingIndex);
                                 mBitMaps.add(framefordisplay);
                                 detectingIndex++;
                             } else {
