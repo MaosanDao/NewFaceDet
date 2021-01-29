@@ -2,6 +2,8 @@ package com.tzutalin.dlib;
 
 import android.graphics.Bitmap;
 
+import java.util.List;
+
 /**
  * Created on 2020/3/24.
  *
@@ -10,14 +12,7 @@ import android.graphics.Bitmap;
  */
 public interface FaceDetectListener {
 
-    /**
-     * data For Each Frame
-     *
-     * @param bitmap Bitmap
-     */
-    void onBitMap(Bitmap bitmap);
-
     void onReady();
 
-    void onFaceDetected();
+    void onFaceDetected(List<Bitmap> bitmap);
 }

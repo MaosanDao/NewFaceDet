@@ -20,9 +20,6 @@ public class ProcessWithQueue extends Thread {
 
     private LinkedBlockingQueue<Bitmap> mQueue;
     private LinkedBlockingQueue<Bitmap> frameForDisplay;
-
-    private static int checkMode = 0;
-
     private List<VisionDetRet> results;
 
     private Handler mInferenceHandler;
@@ -78,7 +75,14 @@ public class ProcessWithQueue extends Thread {
     private boolean isCheckedMouthHint = false;
 
     private int detectingIndex = 0;
+    private List<Bitmap> mBitMaps;
+    private long mRecordTime = 0;
+    private int MAX_INTERVAL = 1000;
 
+    /**
+     * 识别几次
+     */
+    private int maxDetectTimes = 3;
 
     public ProcessWithQueue(LinkedBlockingQueue<Bitmap> frameQueue
             , LinkedBlockingQueue<Bitmap> frameQueueForDisplay, Context context
@@ -87,6 +91,7 @@ public class ProcessWithQueue extends Thread {
         this.mInferenceHandler = handler;
         this.mLastMotions = mLastMotions;
         this.faceDetectListener = faceDetectListener;
+        this.mBitMaps = new ArrayList<>();
 
         mQueue = frameQueue;
         frameForDisplay = frameQueueForDisplay;
@@ -95,8 +100,15 @@ public class ProcessWithQueue extends Thread {
         start();
     }
 
-    public void setMotionType(int motion) {
-        checkMode = motion;
+    /**
+     * 设置识别的间隔时间
+     */
+    public void setDetectMaxInterval(int time) {
+        MAX_INTERVAL = time;
+    }
+
+    public void setDetectTimes(int time) {
+        maxDetectTimes = time;
     }
 
     public void release() {
@@ -124,27 +136,36 @@ public class ProcessWithQueue extends Thread {
     }
 
     private void processFrame(final Bitmap frameData, final Bitmap framefordisplay) {
-        if (frameData != null && mInferenceHandler != null) {
-            mInferenceHandler.postDelayed(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.w("FaceDetectSDK", "mInferenceHandler");
-                            results = mFaceDet.detect(frameData);
-                            if (results == null) {
-                                return;
+        if (System.currentTimeMillis() - mRecordTime > MAX_INTERVAL) {
+            mRecordTime = System.currentTimeMillis();
+            if (frameData != null && mInferenceHandler != null) {
+                Runnable face = new Runnable() {
+                    @Override
+                    public void run() {
+                        results = mFaceDet.detect(frameData);
+                        if (results == null) {
+                            return;
+                        }
+                        if (results.size() != 0) {
+                            for (final VisionDetRet ret : results) {
+                                float resizeRatio = 4f;
+                                ArrayList<Point> landmarks = ret.getFaceLandmarks();
                             }
-                            if (results.size() != 0) {
-                                for (final VisionDetRet ret : results) {
-                                    float resizeRatio = 4f;
-                                    ArrayList<Point> landmarks = ret.getFaceLandmarks();
-                                }
 
-                                Log.d("wangpei", "check face demo");
-                                faceDetectListener.onFaceDetected();
+                            if (detectingIndex < maxDetectTimes) {
+                                Log.d("wangpei", "take:" + detectingIndex);
+                                mBitMaps.add(framefordisplay);
+                                detectingIndex++;
+                            } else {
+                                faceDetectListener.onFaceDetected(mBitMaps);
                             }
                         }
-                    }, 1000);
+                    }
+                };
+
+
+                mInferenceHandler.post(face);
+            }
         }
     }
 

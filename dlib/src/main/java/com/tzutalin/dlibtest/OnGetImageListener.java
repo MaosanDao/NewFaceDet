@@ -93,8 +93,18 @@ public class OnGetImageListener implements OnImageAvailableListener {
         }
     }
 
-    void setMotionType(int motion) {
-        processFrameQueue.setMotionType(motion);
+    void setDetectMaxInterval(int time) {
+        if (time < 0) {
+            return;
+        }
+        processFrameQueue.setDetectMaxInterval(time);
+    }
+
+    void setDetectTimes(int time) {
+        if (time < 0) {
+            return;
+        }
+        processFrameQueue.setDetectTimes(time);
     }
 
     private void drawResizedBitmap(final Bitmap src, final Bitmap dst) {

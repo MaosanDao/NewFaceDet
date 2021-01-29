@@ -421,6 +421,21 @@ public class FaceDetectSDK {
 
     }
 
+    public FaceDetectSDK setDetectMaxInterval(int time) {
+        if (null != mOnGetPreviewListener) {
+            mOnGetPreviewListener.setDetectMaxInterval(time);
+        }
+        return this;
+    }
+
+
+    public FaceDetectSDK setDetectTimes(int time) {
+        if (null != mOnGetPreviewListener) {
+            mOnGetPreviewListener.setDetectTimes(time);
+        }
+        return this;
+    }
+
     /**
      * Sets up member variables related to camera.
      *
