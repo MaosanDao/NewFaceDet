@@ -6,7 +6,7 @@ group = "com.tzutalin.dlib-android-app"
 
 android {
     compileSdkVersion 28
-    buildToolsVersion '25.0.3'
+    buildToolsVersion '28.0.3'
 
     defaultConfig {
         minSdkVersion 21
@@ -15,14 +15,13 @@ android {
         versionName "${rootProject.ext.releaseVersionName}"
 
         ndk{
-            abiFilters 'arm64-v8a'
+            abiFilters 'armeabi'
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            consumerProguardFiles 'proguard-rules.pro'
         }
     }
 
@@ -46,15 +45,16 @@ configurations {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile "com.android.support:appcompat-v7:${rootProject.ext.androidSupportSdkVersion}"
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "com.android.support:appcompat-v7:${rootProject.ext.androidSupportSdkVersion}"
     javadocDeps "com.android.support:appcompat-v7:${rootProject.ext.androidSupportSdkVersion}"
-    compile "com.android.support:support-annotations:${rootProject.ext.androidSupportSdkVersion}"
+    implementation "com.android.support:support-annotations:${rootProject.ext.androidSupportSdkVersion}"
     javadocDeps "com.android.support:support-annotations:${rootProject.ext.androidSupportSdkVersion}"
 }
 
 buildscript {
     repositories {
+        google()
         mavenCentral()
     }
 
@@ -200,4 +200,5 @@ if(project.rootProject.file('local.properties').isFile()) {
         }
         configurations = ['archives']
     }
+
 }

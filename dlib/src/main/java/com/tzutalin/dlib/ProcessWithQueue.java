@@ -78,9 +78,6 @@ public class ProcessWithQueue extends Thread {
     private long mRecordTime = 0;
     private int MAX_INTERVAL = 1000;
 
-    /**
-     * 识别几次
-     */
     private int maxDetectTimes = 3;
 
     public ProcessWithQueue(LinkedBlockingQueue<Bitmap> frameQueue
@@ -99,9 +96,6 @@ public class ProcessWithQueue extends Thread {
         start();
     }
 
-    /**
-     * 设置识别的间隔时间
-     */
     public void setDetectMaxInterval(int time) {
         MAX_INTERVAL = time;
     }
